@@ -107,8 +107,8 @@ for (var i = 0; i < ModPeriodTable[0].length; i++) {
 
 function ModPlayer(mod, rate) {
 	/* timing calculations */
-	var ticksPerSecond = 7093789.2; /* PAL frequency */
-	var ticksPerFrame; /* calculated by setBpm */
+	var ticksPerSecond = 7093789.2;		/* PAL frequency */
+	var ticksPerFrame;					/* calculated by setBpm */
 	var ticksPerOutputSample = Math.round(ticksPerSecond / rate);
 	var ticksSinceStartOfFrame = 0;
 	
@@ -131,7 +131,7 @@ function ModPlayer(mod, rate) {
 	var doBreak = false;	//Bxx, Dxx - jump to order and pattern break
 	var	breakPos = 0;
 	var	breakRow = 0;
-	var delayRows = false; //EEx pattern delay.
+	var delayRows = false;	//EEx pattern delay.
 	
 	var channels = [];
 	for (var chan = 0; chan < mod.channelCount; chan++) {
@@ -284,7 +284,7 @@ function ModPlayer(mod, rate) {
 							case 0x0B: /* fine volume slide down - EBx */
 								channel.fineVolumeDelta = -note.extEffectParameter;
 								break;
-							case 0x0C: /* note cute - ECx */
+							case 0x0C: /* note cut - ECx */
 								channel.cut = note.extEffectParameter;
 								break;
 							case 0x0D: /* note delay - EDx */
@@ -453,7 +453,8 @@ function ModPlayer(mod, rate) {
 	}
 	
 	this.getSamples = function(sampleCount) {
-		samples = [];
+		var samplesLeft = [];
+		var samplesRight = [];
 		var i = 0;
 		while (i < sampleCount) {
 			ticksSinceStartOfFrame += ticksPerOutputSample;
@@ -495,11 +496,11 @@ function ModPlayer(mod, rate) {
 				}
 			}
 			
-			samples[i] = leftOutputLevel / (128 * 128 * mod.channelCount);
-			samples[i+1] = rightOutputLevel / (128 * 128 * mod.channelCount);
-			i += 2;
+			samplesLeft[i] = leftOutputLevel / (128 * 128 * mod.channelCount);
+			samplesRight[i] = rightOutputLevel / (128 * 128 * mod.channelCount);
+			i += 1;
 		}
 		
-		return samples;
+		return [samplesLeft, samplesRight];
 	}
 }

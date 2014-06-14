@@ -84,7 +84,7 @@ function ModFile(mod) {
 	var sampleOffset = patternOffset;
 	for (var s = 0; s < this.sampleCount; s++) {
 		this.samples[s].startOffset = sampleOffset;
-		this.sampleData[s] = TypedArray(this.samples[s].length, "uint8");
+		this.sampleData[s] = new Uint8Array(this.samples[s].length);
 		var i = 0;
 		for (var o = sampleOffset, e = sampleOffset + this.samples[s].length; o < e; o++) {
 			this.sampleData[s][i] = mod.charCodeAt(o);

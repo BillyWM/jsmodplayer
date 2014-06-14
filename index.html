@@ -1,52 +1,61 @@
-<!DOCTYPE HTML>
+<!DOCTYPE html>
 <html>
 	<head>
 		<script src="src/modfile.js"></script>
+		<script src="src/xmfile.js"></script>
 		<script src="src/modplayer.js"></script>
-		<script src="src/swfobject.js"></script>
-		<script src="src/dynamicaudio.js"></script>
 		<style>
 			p { margin-top: 8px; margin-bottom: 8px}
 		</style>
 		
 		<script>
 			var modPlayer;
-			var dynamicAudio;
-			
-			function init() {
-				dynamicAudio = new DynamicAudio({'swf': 'dynamicaudio.swf'});
-			}
 			
 			var playing = false;
-			var bufferSeconds = 5; /* don't buffer too much or it will sputter doing the work */
-			var bufferLength = 44100 * 2 * bufferSeconds;
+			var channels = 2;				//stereo
+			var sampleRate = 44100;
+			var bufferSize = 8192;			// buffer size is no longer multiplied by channels
+											//		because buffers are per-channel
+
+
+
 			function play() {
+				status.innerHTML = "Playing (<a href='#' onclick='stop(); return false;'>stop</a>)";
 				playing = true;
-				dynamicAudio.write(modPlayer.getSamples(bufferLength));
-				bufferMoreData();
-			}
-			
-			function bufferMoreData() {
-				if (playing) {
-					dynamicAudio.write(modPlayer.getSamples(bufferLength));
-					setTimeout(bufferMoreData, 100);
+				
+				var audioContext = new AudioContext();
+				var processor = audioContext.createScriptProcessor(bufferSize, 0, 2);
+				processor.onaudioprocess = function(e) {
+					var output = {}
+					var samples = modPlayer.getSamples(bufferSize);
+
+					output.left = e.outputBuffer.getChannelData(0);
+					output.right = e.outputBuffer.getChannelData(1);
+					for (i=0; i < bufferSize; i++) {
+						output.left[i] = samples[0][i];
+						output.right[i] = samples[1][i];
+					}
 				}
+				
+				processor.connect(audioContext.destination);
+				
 			}
-			
+
 			function stop() {
+				status.innerHTML = "Paused (<a href='#' onclick='play(); return false;'>play</a>)";
 				playing = false;
 			}
 
 			/* load from harddrive using HTML5 File API */
 			function loadLocal(file) {
 				var reader = new FileReader();
-				/* ugly-ass closure nonsense */
 				reader.onload = (function(theFile) {
 					return function(e) {
 						/* actually load mod once we're passed the file data */
 						theFile = e.target.result; /* get the data string out of the blob object */
 						var modFile = new ModFile(theFile);
 						modPlayer = new ModPlayer(modFile, 44100);
+						console.log(modFile);
 						play();
 						document.getElementById('status').innerText = '';
 					};
@@ -87,19 +96,18 @@
 		<h1>JSModPlayer</h1>
 		<h2>The imaginatively named Javascript .mod player by Gasman</h2>
 		<p>This is a work in progress - not all effects are implemented yet.</p>
-		<p>(refresh the page to stop audio - no proper playback controls yet...)</p>
 		<ul>
 			<li><a href="javascript:loadRemote('mods/ambpower.mod')">Ambient Power (Vogue / Triton)</a></li>
 			<li><a href="javascript:loadRemote('mods/dope.mod')">Dope / Onward Ride (Jugi / Complex)</a></li>
 			<li><a href="javascript:loadRemote('mods/frust.mod')">Mental Frustration (Nugget / Rebels)</a></li>
 			<li><a href="javascript:loadRemote('mods/mindkick.mod')">Mindkick (Mindfuck / Mentasm)</a></li>
 			<li><a href="javascript:loadRemote('mods/sundance.mod')">Sundance (Purple Motion / Future Crew)</a></li>
-			<li><a href="javascript:loadRemote('mods/ode_to_protracker.mod')">Ode to Protracker (Asle / Sylvain Chipaux)</a></li>
+			<!-- These are benchmark modules. Not for public consumption....yet :) -->
+			<!--<li><a href="javascript:loadRemote('mods/ode_to_protracker.mod')">Ode to Protracker (Asle / Sylvain Chipaux)</a></li>-->
 			<li><a href="javascript:loadRemote('mods/RandomVoice-Monday.mod')">Monday (Edvin Fladen a.k.a "Random Voice")</a></li>
 			<li>From harddrive: <input type="file" id="input" multiple="true" onchange="loadLocal(this.files[0])"></li>
 		</ul>
-		<div id="status"></div>
-		<p>This is a work in progress - not all effects are implemented yet. Sound output is done with Ben Firshman's <a href="http://github.com/bfirsh/dynamicaudio.js">dynamicaudio.js</a> (using Firefox's audio data API, falling back on Flash if not available).</p>
+		<div id="status">Not started</div>
 		<h3>Credits</h3>
 		<p>Original by Gasman.
 			<a href="http://twitter.com/westdotcodottt">@westdotcodottt</a> -
@@ -109,8 +117,8 @@
 		<p>Forked and improved by
 			<a href="http://billy.wenge-murphy.com/">Billy Wenge-Murphy</a> -
 			<a href="http://twitter.com/billywm">@BillyWM</a> -
-			<a href="mailto:iamthebilly@gmail.com">iamthebilly@gmail.com</a> - April 2011.
-			<p>Added local file loading (HTML5 File API), implemented more effects, fixes to playback</p>
+			<a href="mailto:iamthebilly@gmail.com">iamthebilly@gmail.com</a> - April 2011.<br>
+			Added local file loading (HTML5 File API), implemented more effects, fixes to playback
 		</p>
 		<p>Source code on Github:
 			<a href="http://github.com/gasman/jsmodplayer">Gasman</a> (original)
