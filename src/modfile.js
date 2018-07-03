@@ -22,14 +22,12 @@ function ModFile(mod) {
 	this.positions = [];
 	this.patternCount = 0;
 	this.patterns = [];
-	
 	this.title = trimNulls(mod.substr(0, 20))
-
 	this.sampleCount = 31;
 
 	for (var i = 0; i < this.sampleCount; i++) {
-		var sampleInfo = mod.substr(20 + i*30, 30);
-		var sampleName = trimNulls(sampleInfo.substr(0, 22));
+		let sampleInfo = mod.substr(20 + i*30, 30);
+		//var sampleName = trimNulls(sampleInfo.substr(0, 22));
 		this.samples[i] = {
 			length: getWord(sampleInfo, 22) * 2,
 			finetune: sampleInfo.charCodeAt(24),
@@ -48,7 +46,7 @@ function ModFile(mod) {
 		}
 	}
 	
-	var identifier = mod.substr(1080, 4);
+	let identifier = mod.substr(1080, 4);
 	
 	this.channelCount = channelCountByIdentifier[identifier];
 	if (!this.channelCount) {
@@ -81,15 +79,18 @@ function ModFile(mod) {
 		}
 	}
 	
-	var sampleOffset = patternOffset;
-	for (var s = 0; s < this.sampleCount; s++) {
+	let sampleOffset = patternOffset;
+	for (let s = 0; s < this.sampleCount; s++) {
+
 		this.samples[s].startOffset = sampleOffset;
 		this.sampleData[s] = new Uint8Array(this.samples[s].length);
-		var i = 0;
+
+		let i = 0;
 		for (var o = sampleOffset, e = sampleOffset + this.samples[s].length; o < e; o++) {
 			this.sampleData[s][i] = mod.charCodeAt(o);
 			i++;
 		}
+		
 		sampleOffset += this.samples[s].length;
 	}
 	

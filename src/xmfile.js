@@ -117,10 +117,4 @@ function XMFile(mod) {
 			}
 		}
 	}
-
-
-
-
-
-	
 }
