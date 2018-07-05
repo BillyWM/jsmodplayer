@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 /*
 	Useful docs
 		Explains effect calculations: http://www.mediatel.lu/workshop/audio/fileformat/h_mod.html
@@ -10,12 +12,45 @@ function ModPlayer(mod, rate) {
 	this.rate = rate;
 
 	this.setInitialState();
+	this.initializeAudio();
 	this.initializeChannels();
 	this.setBpm(125);
 	this.loadPosition(0);
 	
 }
 
+/**
+ * Callback triggered continously during playback
+ * 
+ * @param {*} event 
+ */
+ModPlayer.prototype.onaudioprocess = function(event) {
+	let output = {}
+	let samples = modPlayer.getSamples(bufferSize);
+
+	// getChannelData returns a reference we'll access through output.left/output.right
+	output.left = event.outputBuffer.getChannelData(0);
+	output.right = event.outputBuffer.getChannelData(1);
+
+	for (let i=0; i < this.bufferSize; i++) {
+		output.left[i] = samples[0][i];
+		output.right[i] = samples[1][i];
+	}
+}
+
+ModPlayer.prototype.initializeAudio = function() {
+	
+	let processor;
+
+	this.audioContext = new AudioContext();
+	processor = audioContext.createScriptProcessor(this.bufferSize, 0, 2);
+    processor.connect(audioContext.destination);
+
+}
+
+
+ModPlayer.prototype.play = function() {  
+}
 
 ModPlayer.prototype.initializeChannels = function() {
 
@@ -45,6 +80,14 @@ ModPlayer.prototype.initializeChannels = function() {
 }
 
 ModPlayer.prototype.setInitialState = function() {
+
+	this.playing = false;
+
+	// Playback properties for browser, not properties of the .mod
+	this.playbackChannels = 2;
+	this.sampleRate = 44100;
+	this.bufferSize = 8192;	
+
 	this.ticksPerFrame = null;				// calculated by setBpm
 	this.currentPattern = null;
 	this.currentPosition = null;

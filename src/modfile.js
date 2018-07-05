@@ -1,4 +1,14 @@
-var channelCountByIdentifier = {
+/* eslint-disable */
+
+ModFile.prototype._trimNulls = function(str) {
+	return str.replace(/\x00+$/, '');
+}
+
+ModFile.prototype._getWord = function(str, pos) {
+	return (str.charCodeAt(pos) << 8) + str.charCodeAt(pos+1)
+}
+
+ModFile.channelCountByIdentifier = {
 	'TDZ1': 1, '1CHN': 1, 'TDZ2': 2, '2CHN': 2, 'TDZ3': 3, '3CHN': 3,
 	'M.K.': 4, 'FLT4': 4, 'M!K!': 4, '4CHN': 4, 'TDZ4': 4, '5CHN': 5, 'TDZ5': 5,
 	'6CHN': 6, 'TDZ6': 6, '7CHN': 7, 'TDZ7': 7, '8CHN': 8, 'TDZ8': 8, 'OCTA': 8, 'CD81': 8,
@@ -9,12 +19,6 @@ var channelCountByIdentifier = {
 }
 
 function ModFile(mod) {
-	function trimNulls(str) {
-		return str.replace(/\x00+$/, '');
-	}
-	function getWord(str, pos) {
-		return (str.charCodeAt(pos) << 8) + str.charCodeAt(pos+1)
-	}
 
 	this.data = mod;
 	this.samples = [];
@@ -22,23 +26,25 @@ function ModFile(mod) {
 	this.positions = [];
 	this.patternCount = 0;
 	this.patterns = [];
-	this.title = trimNulls(mod.substr(0, 20))
+	this.title = this._trimNulls(mod.substr(0, 20))
 	this.sampleCount = 31;
 
-	for (var i = 0; i < this.sampleCount; i++) {
+	for (let i = 0; i < this.sampleCount; i++) {
+		
 		let sampleInfo = mod.substr(20 + i*30, 30);
-		//var sampleName = trimNulls(sampleInfo.substr(0, 22));
+		//let sampleName = trimNulls(sampleInfo.substr(0, 22));
 		this.samples[i] = {
-			length: getWord(sampleInfo, 22) * 2,
+			length: this._getWord(sampleInfo, 22) * 2,
 			finetune: sampleInfo.charCodeAt(24),
 			volume: sampleInfo.charCodeAt(25),
-			repeatOffset: getWord(sampleInfo, 26) * 2,
-			repeatLength: getWord(sampleInfo, 28) * 2,
+			repeatOffset: this._getWord(sampleInfo, 26) * 2,
+			repeatLength: this._getWord(sampleInfo, 28) * 2,
 		}
 	}
 	
 	this.positionCount = mod.charCodeAt(950);
 	this.positionLoopPoint = mod.charCodeAt(951);
+
 	for (var i = 0; i < 128; i++) {
 		this.positions[i] = mod.charCodeAt(952+i);
 		if (this.positions[i] >= this.patternCount) {
@@ -48,10 +54,7 @@ function ModFile(mod) {
 	
 	let identifier = mod.substr(1080, 4);
 	
-	this.channelCount = channelCountByIdentifier[identifier];
-	if (!this.channelCount) {
-		this.channelCount = 4;
-	}
+	this.channelCount = channelCountByIdentifier[identifier] || 4;
 	
 	var patternOffset = 1084;
 	for (var pat = 0; pat < this.patternCount; pat++) {
@@ -90,8 +93,10 @@ function ModFile(mod) {
 			this.sampleData[s][i] = mod.charCodeAt(o);
 			i++;
 		}
-		
+
 		sampleOffset += this.samples[s].length;
 	}
 	
 }
+
+export default ModFile;

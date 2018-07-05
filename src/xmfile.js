@@ -1,3 +1,6 @@
+/* eslint-disable */
+
+
 /*
 	http://www.fileformat.info/format/xm/corion.htm
 	
