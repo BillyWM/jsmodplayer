@@ -1,5 +1,7 @@
 /* eslint-disable */
 
+// TODO: Separate effect flags from effect values (eg retrigger into retriggerActive and retriggerPoint)
+
 /*
 	Useful docs
 		Explains effect calculations: http://www.mediatel.lu/workshop/audio/fileformat/h_mod.html
@@ -16,7 +18,19 @@ function ModPlayer(mod, rate) {
 	this.initializeChannels();
 	this.setBpm(125);
 	this.loadPosition(0);
+}
+
+/**
+ * Create a connection to the Web Audio system
+ */
+ModPlayer.prototype.initializeAudio = function() {
 	
+	let processor;
+
+	this.audioContext = new AudioContext();
+	processor = audioContext.createScriptProcessor(this.bufferSize, 0, 2);
+    processor.connect(audioContext.destination);
+
 }
 
 /**
@@ -28,7 +42,7 @@ ModPlayer.prototype.onaudioprocess = function(event) {
 	let output = {}
 	let samples = modPlayer.getSamples(bufferSize);
 
-	// getChannelData returns a reference we'll access through output.left/output.right
+	// getChannelData returns a reference we'll access through output.left / output.right
 	output.left = event.outputBuffer.getChannelData(0);
 	output.right = event.outputBuffer.getChannelData(1);
 
@@ -38,18 +52,66 @@ ModPlayer.prototype.onaudioprocess = function(event) {
 	}
 }
 
-ModPlayer.prototype.initializeAudio = function() {
-	
-	let processor;
+ModPlayer.prototype.reset = function() {
+	this.stop();
+	this.initializeChannels();
+	this.setInitialState();
+	this.setBpm();
+}
 
-	this.audioContext = new AudioContext();
-	processor = audioContext.createScriptProcessor(this.bufferSize, 0, 2);
-    processor.connect(audioContext.destination);
+// TODO (2018): Load response as Blob or ArrayBuffer directly
+ModPlayer.prototype.loadRemoteFile = function(path) {
+    var request = new XMLHttpRequest();
+    request.open('GET', path);
+    fetch.overrideMimeType("text/plain; charset=x-user-defined");
+    request.onreadystatechange = function() {
+        if(this.readyState == 4 && this.status == 200) {
+            /* munge response into a binary string */
+            let t = this.responseText || "" ;
+            let ff = [];
+            let mx = t.length;
+            let scc= String.fromCharCode;
+            for (let z = 0; z < mx; z++) {
+                ff[z] = scc(t.charCodeAt(z) & 255);
+            }
+            let binString = ff.join("");
+            
+            let modFile = new ModFile(binString);
+            modPlayer = new ModPlayer(modFile, 44100);
+        }
+    }
+    request.send();
+}
 
+/**
+ * Load a .mod file from harddrive using HTML5 File API
+ * 
+ * TODO: Upgrade to return Promise to signal success
+ * @param {*} file 
+ */
+ModPlayer.prototype.loadLocalFile = function(file) {
+
+    let reader = new FileReader();
+    reader.onload = this._readerOnLoad.bind(successCallback);
+	reader.readAsBinaryString(file);	
+}
+
+/**
+ * FileReader callback for loading a local file from harddrive
+ * @param {*} event 
+ */
+ModPlayer.prototype._readerOnLoad = function(event) {
+
+	file = event.target.result;
+	this.mod = new ModFile(file);
 }
 
 
 ModPlayer.prototype.play = function() {  
+}
+
+ModPlayer.prototype.stop = function() {
+
 }
 
 ModPlayer.prototype.initializeChannels = function() {
@@ -108,7 +170,6 @@ ModPlayer.prototype.setInitialState = function() {
 	this.breakPos = 0;
 	this.breakRow = 0;
 	this.delayRows = false;		//EEx pattern delay.
-
 
 }
 
@@ -218,14 +279,14 @@ ModPlayer.prototype.doFrame = function() {
 	}
 
 	this.currentFrame++;
-	if (this.currentFrame == this.framesPerRow) {
+	if (this.currentFrame === this.framesPerRow) {
 
 		this.currentFrame = 0;
 
 		//Don't advance to reading more rows if pattern delay effect is active
-		if (delayRows !== false) {
-			delayRows--;
-			if (delayRows < 0) delayRows = false;
+		if (this.delayRows !== false) {
+			this.delayRows--;
+			if (this.delayRows < 0) this.delayRows = false;
 		} else {
 			this.getNextRow();
 		}
@@ -432,7 +493,7 @@ ModPlayer.prototype.loadRow = function(rowNumber) {
 							channel.delay = note.extEffectParameter;
 							break;
 						case 0x0E: /* pattern delay EEx */
-							delayRows = note.extEffectParameter;
+							this.delayRows = note.extEffectParameter;
 							break;
 						case 0x06:
 							//set loop start with E60
