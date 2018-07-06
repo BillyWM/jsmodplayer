@@ -30,6 +30,7 @@ ModPlayer.prototype.initializeAudio = function() {
 
 	this.audioContext = new AudioContext();
 	processor = this.audioContext.createScriptProcessor(this.bufferSize, 0, 2);
+	processor.onaudioprocess = this.onaudioprocess.bind(this);
     processor.connect(this.audioContext.destination);
 
 }
@@ -40,8 +41,10 @@ ModPlayer.prototype.initializeAudio = function() {
  * @param {*} event 
  */
 ModPlayer.prototype.onaudioprocess = function(event) {
+	if (!this.playing) return;
+
 	let output = {}
-	let samples = modPlayer.getSamples(bufferSize);
+	let samples = this.getSamples(this.bufferSize);
 
 	// getChannelData returns a reference we'll access through output.left / output.right
 	output.left = event.outputBuffer.getChannelData(0);
@@ -64,23 +67,8 @@ ModPlayer.prototype.reset = function() {
 ModPlayer.prototype.loadRemoteFile = function(path) {
     var request = new XMLHttpRequest();
     request.open('GET', path);
-    fetch.overrideMimeType("text/plain; charset=x-user-defined");
-    request.onreadystatechange = function() {
-        if(this.readyState == 4 && this.status == 200) {
-            /* munge response into a binary string */
-            let t = this.responseText || "" ;
-            let ff = [];
-            let mx = t.length;
-            let scc= String.fromCharCode;
-            for (let z = 0; z < mx; z++) {
-                ff[z] = scc(t.charCodeAt(z) & 255);
-            }
-            let binString = ff.join("");
-            
-            let modFile = new ModFile(binString);
-            modPlayer = new ModPlayer(modFile, 44100);
-        }
-    }
+    request.overrideMimeType("text/plain; charset=x-user-defined");
+    request.onreadystatechange = this._remoteOnLoad.bind(this, request);
     request.send();
 }
 
@@ -105,7 +93,20 @@ ModPlayer.prototype._readerOnLoad = function(event) {
 
 	let fileContents = event.target.result;
 	this.loadMod(fileContents);
-	console.log(fileContents);
+}
+
+ModPlayer.prototype._remoteOnLoad = function(request, event) {
+	if(request.readyState === 4 && request.status === 200) {
+		/* munge response into a binary string */
+		let text = request.responseText || "" ;
+		let ff = [];
+		for (let z = 0; z < text.length; z++) {
+			ff[z] = String.fromCharCode(text.charCodeAt(z) & 255);
+		}
+		let binString = ff.join("");
+		
+		this.loadMod(binString);
+	}
 }
 
 ModPlayer.prototype.loadMod = function(fileContents) {
@@ -113,6 +114,8 @@ ModPlayer.prototype.loadMod = function(fileContents) {
 	this.initializeChannels();
 	this.setBpm(125);
 	this.loadPosition(0);
+	this.playing = true;
+	console.log(this.mod);
 }
 
 
@@ -202,7 +205,7 @@ ModPlayer.prototype.getNextRow = function() {
 						? this.mod.positionLoopPoint
 						: this.breakPos;
 
-		this.loadPosition(breakPos);
+		this.loadPosition(this.breakPos);
 
 	} else if (this.exLoop && this.currentRow == this.exLoopEnd && this.exLoopCount > 0) {
 
@@ -241,7 +244,7 @@ ModPlayer.prototype.doFrame = function() {
 		let finetune = channel.finetune;
 
 		// apply fine slides only once
-		if (currentFrame == 0) {
+		if (this.currentFrame == 0) {
 			channel.ticksPerSample += channel.finePeriodDelta * 2;
 			channel.volume += channel.fineVolumeDelta;
 		}
@@ -254,12 +257,12 @@ ModPlayer.prototype.doFrame = function() {
 			channel.volume = 0;
 		}
 
-		if (channel.cut !== false && currentFrame >= channel.cut) channel.volume = 0;
-		if (channel.delay !== false && currentFrame <= channel.delay) channel.volume = 0;
+		if (channel.cut !== false && this.currentFrame >= channel.cut) channel.volume = 0;
+		if (channel.delay !== false && this.currentFrame <= channel.delay) channel.volume = 0;
 
 		if (channel.retrigger !== false) {
 			//short-circuit prevents x mod 0
-			if (channel.retrigger === 0 || currentFrame % channel.retrigger === 0) channel.samplePosition = 0;
+			if (channel.retrigger === 0 || this.currentFrame % channel.retrigger === 0) channel.samplePosition = 0;
 		}
 
 		channel.ticksPerSample += channel.periodDelta * 2;
@@ -320,7 +323,7 @@ ModPlayer.prototype.getSamples = function(sampleCount) {
 		for (let chan = 0; chan < this.mod.channelCount; chan++) {
 			let channel = this.channels[chan];
 			if (channel.playing) {
-				channel.ticksSinceStartOfSample += ticksPerOutputSample;
+				channel.ticksSinceStartOfSample += this.ticksPerOutputSample;
 				while (channel.ticksSinceStartOfSample >= channel.ticksPerSample) {
 					channel.samplePosition++;
 					if (channel.sample.repeatLength > 2 && channel.samplePosition >= channel.sample.repeatOffset + channel.sample.repeatLength) {
@@ -336,7 +339,7 @@ ModPlayer.prototype.getSamples = function(sampleCount) {
 					(well, it could be more for odd channel counts) */
 				if (channel.playing) {
 					
-					let rawVol = mod.sampleData[channel.sampleNum][channel.samplePosition];
+					let rawVol = this.mod.sampleData[channel.sampleNum][channel.samplePosition];
 
 					// range (-128*64)..(127*64)
 					let vol = (((rawVol + 128) & 0xff) - 128) * channel.volume;
@@ -346,8 +349,8 @@ ModPlayer.prototype.getSamples = function(sampleCount) {
 						this.leftOutputLevel += (vol + channel.pan) * 3;
 						this.rightOutputLevel += (vol + 0xFF - channel.pan);
 					} else {
-						leftOutputLevel += (vol + 0xFF - channel.pan)
-						rightOutputLevel += (vol + channel.pan) * 3;
+						this.leftOutputLevel += (vol + 0xFF - channel.pan)
+						this.rightOutputLevel += (vol + channel.pan) * 3;
 					}
 				}
 			}
@@ -553,6 +556,7 @@ ModPlayer.prototype.loadPattern = function(patternNumber) {
 	this.loadRow(row);
 }
 
+// loadPosition -> loadPattern -> loadRow
 ModPlayer.prototype.loadPosition = function(positionNumber) {
 	//Handle invalid position numbers that may be passed by invalid loop points
 	positionNumber = (positionNumber > this.mod.positionCount - 1) ? 0 : positionNumber;	
@@ -561,12 +565,8 @@ ModPlayer.prototype.loadPosition = function(positionNumber) {
 }
 
 ModPlayer.prototype.modPeriodToNoteNumber = function(period) {
-	// var ModPeriodToNoteNumber = {};
-	// for (var i = 0; i < ModPeriodTable[0].length; i++) {
-	// 	ModPeriodToNoteNumber[ModPeriodTable[0][i]] = i;
-	// }
 
-	return ModPlayer.ModPeriodTable[0][period];
+	return ModPlayer.ModPeriodToNoteNumber[period];
 }
 
 /*
@@ -657,5 +657,12 @@ ModPlayer.ModPeriodTable = [
 	 216 , 203 , 192 , 181 , 171 , 161 , 152 , 144 , 136 , 128 , 121 , 114,
 	 108 , 101 , 96  , 90  , 85  , 80  , 76  , 72  , 68  , 64  , 60  , 57 ]
 ];
+
+ModPlayer.ModPeriodToNoteNumber = {};
+
+for (let i = 0; i < ModPlayer.ModPeriodTable[0].length; i++) {
+	ModPlayer.ModPeriodToNoteNumber[ModPlayer.ModPeriodTable[0][i]] = i;
+}
+
 
 export default ModPlayer;
