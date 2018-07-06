@@ -1,23 +1,5 @@
 /* eslint-disable */
 
-ModFile.prototype._trimNulls = function(str) {
-	return str.replace(/\x00+$/, '');
-}
-
-ModFile.prototype._getWord = function(str, pos) {
-	return (str.charCodeAt(pos) << 8) + str.charCodeAt(pos+1)
-}
-
-ModFile.channelCountByIdentifier = {
-	'TDZ1': 1, '1CHN': 1, 'TDZ2': 2, '2CHN': 2, 'TDZ3': 3, '3CHN': 3,
-	'M.K.': 4, 'FLT4': 4, 'M!K!': 4, '4CHN': 4, 'TDZ4': 4, '5CHN': 5, 'TDZ5': 5,
-	'6CHN': 6, 'TDZ6': 6, '7CHN': 7, 'TDZ7': 7, '8CHN': 8, 'TDZ8': 8, 'OCTA': 8, 'CD81': 8,
-	'9CHN': 9, 'TDZ9': 9,
-	'10CH': 10, '11CH': 11, '12CH': 12, '13CH': 13, '14CH': 14, '15CH': 15, '16CH': 16, '17CH': 17,
-	'18CH': 18, '19CH': 19, '20CH': 20, '21CH': 21, '22CH': 22, '23CH': 23, '24CH': 24, '25CH': 25,
-	'26CH': 26, '27CH': 27, '28CH': 28, '29CH': 29, '30CH': 30, '31CH': 31, '32CH': 32
-}
-
 function ModFile(mod) {
 
 	this.data = mod;
@@ -54,7 +36,7 @@ function ModFile(mod) {
 	
 	let identifier = mod.substr(1080, 4);
 	
-	this.channelCount = channelCountByIdentifier[identifier] || 4;
+	this.channelCount = ModFile.channelCountByIdentifier[identifier] || 4;
 	
 	var patternOffset = 1084;
 	for (var pat = 0; pat < this.patternCount; pat++) {
@@ -62,11 +44,11 @@ function ModFile(mod) {
 		for (var row = 0; row < 64; row++) {
 			this.patterns[pat][row] = [];
 			for (var chan = 0; chan < this.channelCount; chan++) {
-				b0 = mod.charCodeAt(patternOffset);
-				b1 = mod.charCodeAt(patternOffset + 1);
-				b2 = mod.charCodeAt(patternOffset + 2);
-				b3 = mod.charCodeAt(patternOffset + 3);
-				var eff = b2 & 0x0f;
+				let b0 = mod.charCodeAt(patternOffset);
+				let b1 = mod.charCodeAt(patternOffset + 1);
+				let b2 = mod.charCodeAt(patternOffset + 2);
+				let b3 = mod.charCodeAt(patternOffset + 3);
+				let eff = b2 & 0x0f;
 				this.patterns[pat][row][chan] = {
 					sample: (b0 & 0xf0) | (b2 >> 4),
 					period: ((b0 & 0x0f) << 8) | b1,
@@ -97,6 +79,24 @@ function ModFile(mod) {
 		sampleOffset += this.samples[s].length;
 	}
 	
+}
+
+ModFile.channelCountByIdentifier = {
+	'TDZ1': 1, '1CHN': 1, 'TDZ2': 2, '2CHN': 2, 'TDZ3': 3, '3CHN': 3,
+	'M.K.': 4, 'FLT4': 4, 'M!K!': 4, '4CHN': 4, 'TDZ4': 4, '5CHN': 5, 'TDZ5': 5,
+	'6CHN': 6, 'TDZ6': 6, '7CHN': 7, 'TDZ7': 7, '8CHN': 8, 'TDZ8': 8, 'OCTA': 8, 'CD81': 8,
+	'9CHN': 9, 'TDZ9': 9,
+	'10CH': 10, '11CH': 11, '12CH': 12, '13CH': 13, '14CH': 14, '15CH': 15, '16CH': 16, '17CH': 17,
+	'18CH': 18, '19CH': 19, '20CH': 20, '21CH': 21, '22CH': 22, '23CH': 23, '24CH': 24, '25CH': 25,
+	'26CH': 26, '27CH': 27, '28CH': 28, '29CH': 29, '30CH': 30, '31CH': 31, '32CH': 32
+}
+
+ModFile.prototype._trimNulls = function(str) {
+	return str.replace(/\x00+$/, '');
+}
+
+ModFile.prototype._getWord = function(str, pos) {
+	return (str.charCodeAt(pos) << 8) + str.charCodeAt(pos+1)
 }
 
 export default ModFile;

@@ -2,22 +2,23 @@
 
 // TODO: Separate effect flags from effect values (eg retrigger into retriggerActive and retriggerPoint)
 
+// loadLocalFile -> _readerOnLoad -> loadMod
+
 /*
 	Useful docs
 		Explains effect calculations: http://www.mediatel.lu/workshop/audio/fileformat/h_mod.html
 
 */
 
-function ModPlayer(mod, rate) {
+import ModFile from "@/ModFile.js";
 
-	this.mod = mod;
-	this.rate = rate;
+function ModPlayer() {
+
+	this.mod = null;
+	this.rate = 44100;
 
 	this.setInitialState();
 	this.initializeAudio();
-	this.initializeChannels();
-	this.setBpm(125);
-	this.loadPosition(0);
 }
 
 /**
@@ -28,8 +29,8 @@ ModPlayer.prototype.initializeAudio = function() {
 	let processor;
 
 	this.audioContext = new AudioContext();
-	processor = audioContext.createScriptProcessor(this.bufferSize, 0, 2);
-    processor.connect(audioContext.destination);
+	processor = this.audioContext.createScriptProcessor(this.bufferSize, 0, 2);
+    processor.connect(this.audioContext.destination);
 
 }
 
@@ -92,7 +93,7 @@ ModPlayer.prototype.loadRemoteFile = function(path) {
 ModPlayer.prototype.loadLocalFile = function(file) {
 
     let reader = new FileReader();
-    reader.onload = this._readerOnLoad.bind(successCallback);
+    reader.onload = this._readerOnLoad.bind(this);
 	reader.readAsBinaryString(file);	
 }
 
@@ -102,8 +103,16 @@ ModPlayer.prototype.loadLocalFile = function(file) {
  */
 ModPlayer.prototype._readerOnLoad = function(event) {
 
-	file = event.target.result;
-	this.mod = new ModFile(file);
+	let fileContents = event.target.result;
+	this.loadMod(fileContents);
+	console.log(fileContents);
+}
+
+ModPlayer.prototype.loadMod = function(fileContents) {
+	this.mod = new ModFile(fileContents);
+	this.initializeChannels();
+	this.setBpm(125);
+	this.loadPosition(0);
 }
 
 
@@ -156,7 +165,7 @@ ModPlayer.prototype.setInitialState = function() {
 	this.currentRow = null;
 
 	this.ticksPerSecond = 7093789.2;		// PAL frequency
-	this.ticksPerOutputSample = Math.round(ticksPerSecond / rate);
+	this.ticksPerOutputSample = Math.round(this.ticksPerSecond / this.rate);
 	this.ticksSinceStartOfFrame = 0;
 
 	/* initial player state */
@@ -274,7 +283,7 @@ ModPlayer.prototype.doFrame = function() {
 		if (channel.arpeggioActive) {
 			channel.arpeggioCounter++;
 			let noteNumber = channel.arpeggioNotes[channel.arpeggioCounter % 3];
-			channel.ticksPerSample = ModPeriodTable[finetune][noteNumber] * 2;
+			channel.ticksPerSample = ModPlayer.ModPeriodTable[finetune][noteNumber] * 2;
 		}
 	}
 
@@ -360,7 +369,7 @@ ModPlayer.prototype.loadRow = function(rowNumber) {
 	this.breakPos = 0;
 	this.breakRow = 0;
 
-	for (let chan = 0; chan < mod.channelCount; chan++) {
+	for (let chan = 0; chan < this.mod.channelCount; chan++) {
 		let channel = this.channels[chan];
 		let prevNote = channel.prevNote;
 		let note = this.currentPattern[this.currentRow][chan];
@@ -373,7 +382,7 @@ ModPlayer.prototype.loadRow = function(rowNumber) {
 			channel.ticksSinceStartOfSample = 0; /* that's 'sample' as in 'individual volume reading' */
 
 			if (note.sample != 0) {
-				channel.sample = mod.samples[note.sample - 1];
+				channel.sample = this.mod.samples[note.sample - 1];
 				channel.sampleNum = note.sample - 1;
 				channel.volume = channel.sample.volume;
 				channel.finetune = channel.sample.finetune;
@@ -384,10 +393,10 @@ ModPlayer.prototype.loadRow = function(rowNumber) {
 				//the note specified in a tone porta command is not actually played
 				if (note.effect != 0x03) {
 					channel.noteNumber = this.modPeriodToNoteNumber(note.period);
-					channel.ticksPerSample = ModPeriodTable[channel.finetune][channel.noteNumber] * 2;
+					channel.ticksPerSample = ModPlayer.ModPeriodTable[channel.finetune][channel.noteNumber] * 2;
 				} else {
 					channel.noteNumber = this.modPeriodToNoteNumber(prevNote.period);
-					channel.ticksPerSample = ModPeriodTable[channel.finetune][channel.noteNumber] * 2;
+					channel.ticksPerSample = ModPlayer.ModPeriodTable[channel.finetune][channel.noteNumber] * 2;
 				}
 			}
 		}
@@ -540,15 +549,15 @@ ModPlayer.prototype.loadRow = function(rowNumber) {
 
 ModPlayer.prototype.loadPattern = function(patternNumber) {
 	let row = this.doBreak ? this.breakRow : 0;
-	currentPattern = this.mod.patterns[patternNumber];
+	this.currentPattern = this.mod.patterns[patternNumber];
 	this.loadRow(row);
 }
 
 ModPlayer.prototype.loadPosition = function(positionNumber) {
 	//Handle invalid position numbers that may be passed by invalid loop points
 	positionNumber = (positionNumber > this.mod.positionCount - 1) ? 0 : positionNumber;	
-	currentPosition = positionNumber;
-	this.loadPattern(this.mod.positions[currentPosition]);
+	this.currentPosition = positionNumber;
+	this.loadPattern(this.mod.positions[this.currentPosition]);
 }
 
 ModPlayer.prototype.modPeriodToNoteNumber = function(period) {
