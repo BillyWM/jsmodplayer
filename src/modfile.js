@@ -1,64 +1,108 @@
 /* eslint-disable */
 
+
+/**
+ * 
+ * @param {ArrayBuffer} mod Data to populate this mod with. If not supplied, create an empty mod.
+ */
 function ModFile(mod) {
 
-	this.data = mod;
+	this.mod = mod || null;
+	this.data = null;
 	this.samples = [];
 	this.sampleData = [];
 	this.positions = [];
 	this.patternCount = 0;
 	this.patterns = [];
-	this.title = this._trimNulls(mod.substr(0, 20))
+	this.title = null;
 	this.sampleCount = 31;
+
+	// Load in the data if supplied
+	if (this.mod instanceof ArrayBuffer) this.loadFromData(this.mod);
+}
+
+/**
+ * Populate the mod from a supplied ArrayBuffer
+ * 
+ * @param {*} data 
+ */
+ModFile.prototype.loadFromData = function(mod) {
+
+	if (!(mod instanceof ArrayBuffer)) throw new TypeError("Supplied mod data must be ArrayBuffer");
+
+	this.mod = mod;
+	let modView = new DataView(this.mod);
+	let titleView = new DataView(this.mod, 0, 20);
+	let decoder = new TextDecoder();
+
+	this.title = decoder.decode(titleView);
 
 	for (let i = 0; i < this.sampleCount; i++) {
 		
-		let sampleInfo = mod.substr(20 + i*30, 30);
+		//Sample headers start 20 bytes in (after the title) and each take 30 bytes
+		let offset = 20 + (i * 30);
+
+		let sampleInfoView = new DataView(this.mod, offset, 30);
+
 		//let sampleName = trimNulls(sampleInfo.substr(0, 22));
+
 		this.samples[i] = {
-			length: this._getWord(sampleInfo, 22) * 2,
-			finetune: sampleInfo.charCodeAt(24),
-			volume: sampleInfo.charCodeAt(25),
-			repeatOffset: this._getWord(sampleInfo, 26) * 2,
-			repeatLength: this._getWord(sampleInfo, 28) * 2,
+			length: sampleInfoView.getUint16(22) * 2,
+			finetune: sampleInfoView.getUint8(24),
+			volume: sampleInfoView.getUint8(25),
+			repeatOffset: sampleInfoView.getUint16(26) * 2,
+			repeatLength: sampleInfoView.getUint16(28) * 2,
 		}
 	}
 	
-	this.positionCount = mod.charCodeAt(950);
-	this.positionLoopPoint = mod.charCodeAt(951);
+	this.positionCount = modView.getUint8(950);
+	this.positionLoopPoint = modView.getUint8(951);
 
 	for (var i = 0; i < 128; i++) {
-		this.positions[i] = mod.charCodeAt(952+i);
+
+		this.positions[i] = modView.getUint8(952 + i);
+
 		if (this.positions[i] >= this.patternCount) {
-			this.patternCount = this.positions[i]+1;
+			this.patternCount = this.positions[i] + 1;
 		}
 	}
 	
-	let identifier = mod.substr(1080, 4);
+	// TODO: identifier needs TextDecoder
+	let identifierView = new DataView(this.mod, 1080, 4);
+	let identifier = decoder.decode(identifierView);
 	
 	this.channelCount = ModFile.channelCountByIdentifier[identifier] || 4;
 	
 	var patternOffset = 1084;
+
 	for (var pat = 0; pat < this.patternCount; pat++) {
-		this.patterns[pat] = [];
+
+		this.patterns.push([]);
+
 		for (var row = 0; row < 64; row++) {
-			this.patterns[pat][row] = [];
+
+			this.patterns[pat].push([]);
+
 			for (var chan = 0; chan < this.channelCount; chan++) {
-				let b0 = mod.charCodeAt(patternOffset);
-				let b1 = mod.charCodeAt(patternOffset + 1);
-				let b2 = mod.charCodeAt(patternOffset + 2);
-				let b3 = mod.charCodeAt(patternOffset + 3);
+
+				let b0 = modView.getUint8(patternOffset);
+				let b1 = modView.getUint8(patternOffset + 1);
+				let b2 = modView.getUint8(patternOffset + 2);
+				let b3 = modView.getUint8(patternOffset + 3);
 				let eff = b2 & 0x0f;
+
 				this.patterns[pat][row][chan] = {
 					sample: (b0 & 0xf0) | (b2 >> 4),
 					period: ((b0 & 0x0f) << 8) | b1,
 					effect: eff,
 					effectParameter: b3
 				};
+
 				if (eff == 0x0E) {
 					this.patterns[pat][row][chan].extEffect = (b3 & 0xF0) >> 4;
 					this.patterns[pat][row][chan].extEffectParameter = (b3 & 0x0F);
 				}
+
 				patternOffset += 4;
 			}
 		}
@@ -72,13 +116,12 @@ function ModFile(mod) {
 
 		let i = 0;
 		for (var o = sampleOffset, e = sampleOffset + this.samples[s].length; o < e; o++) {
-			this.sampleData[s][i] = mod.charCodeAt(o);
+			this.sampleData[s][i] = modView.getUint8(o);
 			i++;
 		}
 
 		sampleOffset += this.samples[s].length;
 	}
-	
 }
 
 ModFile.channelCountByIdentifier = {
@@ -89,14 +132,6 @@ ModFile.channelCountByIdentifier = {
 	'10CH': 10, '11CH': 11, '12CH': 12, '13CH': 13, '14CH': 14, '15CH': 15, '16CH': 16, '17CH': 17,
 	'18CH': 18, '19CH': 19, '20CH': 20, '21CH': 21, '22CH': 22, '23CH': 23, '24CH': 24, '25CH': 25,
 	'26CH': 26, '27CH': 27, '28CH': 28, '29CH': 29, '30CH': 30, '31CH': 31, '32CH': 32
-}
-
-ModFile.prototype._trimNulls = function(str) {
-	return str.replace(/\x00+$/, '');
-}
-
-ModFile.prototype._getWord = function(str, pos) {
-	return (str.charCodeAt(pos) << 8) + str.charCodeAt(pos+1)
 }
 
 export default ModFile;

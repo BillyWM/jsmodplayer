@@ -64,13 +64,22 @@ ModPlayer.prototype.reset = function() {
 	this.setBpm();
 }
 
-// TODO (2018): Load response as Blob or ArrayBuffer directly
+/**
+ * Load a file from server using XHR
+ */
 ModPlayer.prototype.loadRemoteFile = function(path) {
     var request = new XMLHttpRequest();
     request.open('GET', path);
-    request.overrideMimeType("text/plain; charset=x-user-defined");
-    request.onreadystatechange = this._remoteOnLoad.bind(this, request);
+    request.responseType = "arraybuffer";
+    request.onload = this._remoteOnLoad.bind(this, request);
     request.send();
+}
+
+/**
+ * Callback when XHR has completed.
+ */
+ModPlayer.prototype._remoteOnLoad = function(request, event) {
+	this.loadMod(request.response);
 }
 
 /**
@@ -96,27 +105,12 @@ ModPlayer.prototype._readerOnLoad = function(event) {
 	this.loadMod(fileContents);
 }
 
-ModPlayer.prototype._remoteOnLoad = function(request, event) {
-	if(request.readyState === 4 && request.status === 200) {
-		/* munge response into a binary string */
-		let text = request.responseText || "" ;
-		let ff = [];
-		for (let z = 0; z < text.length; z++) {
-			ff[z] = String.fromCharCode(text.charCodeAt(z) & 255);
-		}
-		let binString = ff.join("");
-		
-		this.loadMod(binString);
-	}
-}
-
 ModPlayer.prototype.loadMod = function(fileContents) {
 	this.mod = new ModFile(fileContents);
 	this.initializeChannels();
 	this.setBpm(125);
 	this.loadPosition(0);
 	this.playing = true;
-	console.log(this.mod);
 }
 
 
