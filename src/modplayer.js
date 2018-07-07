@@ -41,6 +41,7 @@ ModPlayer.prototype.initializeAudio = function() {
  * @param {*} event 
  */
 ModPlayer.prototype.onaudioprocess = function(event) {
+
 	if (!this.playing) return;
 
 	let output = {}
@@ -119,7 +120,8 @@ ModPlayer.prototype.loadMod = function(fileContents) {
 }
 
 
-ModPlayer.prototype.play = function() {  
+ModPlayer.prototype.play = function() {
+	this.playing = true;
 }
 
 ModPlayer.prototype.stop = function() {
@@ -145,10 +147,19 @@ ModPlayer.prototype.initializeChannels = function() {
 			tonePortaTarget: 0, 	//target for 3xx, 5xy as period value
 			tonePortaDelta: 0,
 			tonePortaVolStep: 0, 	//remember pitch slide step for when 5xx is used
-			tonePortaActive: false,
-			cut: false,				//tick to cut at, or false if no cut
-			delay: false,			//tick to delay note until, or false if no delay
-			arpeggioActive: false
+			effects: {
+				arpeggioActive: false,
+				cutActive: false,		
+				delayActive: false,
+				retriggerActive: false,
+				tonePortaActive: false,
+
+				// Tick to cut at (if effect is active)
+				cutPosition: null,
+				// Note to delay until (if effect is active)
+				delayPosition: null,
+				retriggerPoint: null
+			}
 		};
 	}
 }
@@ -251,23 +262,19 @@ ModPlayer.prototype.doFrame = function() {
 
 		channel.volume += channel.volumeDelta;
 
-		if (channel.volume > 64) {
-			channel.volume = 64;
-		} else if (channel.volume < 0) {
-			channel.volume = 0;
-		}
+		channel.volume = this._clamp(channel.volume, 0, 64);
 
-		if (channel.cut !== false && this.currentFrame >= channel.cut) channel.volume = 0;
-		if (channel.delay !== false && this.currentFrame <= channel.delay) channel.volume = 0;
+		if (channel.effects.cutActive && this.currentFrame >= channel.effects.cutPosition) channel.volume = 0;
+		if (channel.effects.delayActive && this.currentFrame <= channel.effects.delayPosition) channel.volume = 0;
 
-		if (channel.retrigger !== false) {
+		if (channel.effects.retriggerActive) {
 			//short-circuit prevents x mod 0
-			if (channel.retrigger === 0 || this.currentFrame % channel.retrigger === 0) channel.samplePosition = 0;
+			if (channel.effects.retriggerPoint === 0 || this.currentFrame % channel.retrigger === 0) channel.samplePosition = 0;
 		}
 
 		channel.ticksPerSample += channel.periodDelta * 2;
 
-		if (channel.tonePortaActive) {
+		if (channel.effects.tonePortaActive) {
 			channel.ticksPerSample += channel.tonePortaDelta * 2;
 			//don't slide below or above allowed note, depending on slide direction
 			if (channel.tonePortaDir == 1 && channel.ticksPerSample > channel.tonePortaTarget * 2) {
@@ -277,13 +284,10 @@ ModPlayer.prototype.doFrame = function() {
 			}
 		}
 		
-		if (channel.ticksPerSample > 4096) {
-			channel.ticksPerSample = 4096;
-		} else if (channel.ticksPerSample < 96) { /* equivalent to period 48, a bit higher than the highest note */
-			channel.ticksPerSample = 96;
-		}
+		/* 96 is equivalent to period 48, a bit higher than the highest note */
+		channel.ticksPerSample = this._clamp(channel.ticksPerSample, 96, 4096);
 
-		if (channel.arpeggioActive) {
+		if (channel.effects.arpeggioActive) {
 			channel.arpeggioCounter++;
 			let noteNumber = channel.arpeggioNotes[channel.arpeggioCounter % 3];
 			channel.ticksPerSample = ModPlayer.ModPeriodTable[finetune][noteNumber] * 2;
@@ -303,8 +307,10 @@ ModPlayer.prototype.doFrame = function() {
 			this.getNextRow();
 		}
 	}
+}
 
-
+ModPlayer.prototype._clamp = function(value, min, max) {
+	return Math.max(min, Math.min(max, value));
 }
 
 ModPlayer.prototype.getSamples = function(sampleCount) {
@@ -373,25 +379,27 @@ ModPlayer.prototype.loadRow = function(rowNumber) {
 	this.breakRow = 0;
 
 	for (let chan = 0; chan < this.mod.channelCount; chan++) {
+
 		let channel = this.channels[chan];
 		let prevNote = channel.prevNote;
 		let note = this.currentPattern[this.currentRow][chan];
 
 		if (typeof channel.sampleNum === "undefined") channel.sampleNum = 0;
 
-		if (note.period != 0 || note.sample != 0) {
+		if (note.period !== 0 || note.sample !== 0) {
+
 			channel.playing = true;
 			channel.samplePosition = 0;
 			channel.ticksSinceStartOfSample = 0; /* that's 'sample' as in 'individual volume reading' */
 
-			if (note.sample != 0) {
+			if (note.sample !== 0) {
 				channel.sample = this.mod.samples[note.sample - 1];
 				channel.sampleNum = note.sample - 1;
 				channel.volume = channel.sample.volume;
 				channel.finetune = channel.sample.finetune;
 			}
 
-			if (note.period != 0) { // && note.effect != 0x03
+			if (note.period !== 0) { // && note.effect != 0x03
 
 				//the note specified in a tone porta command is not actually played
 				if (note.effect != 0x03) {
@@ -403,19 +411,27 @@ ModPlayer.prototype.loadRow = function(rowNumber) {
 				}
 			}
 		}
+
 		channel.finePeriodDelta = 0;
 		channel.fineVolumeDelta = 0;
-		channel.cut = false;
-		channel.delay = false;
-		channel.retrigger = false;
-		channel.tonePortaActive = false;
+		channel.effects.cutActive = false;
+		channel.effects.delayActive = false;
+		channel.effects.retriggerAcive = false;
+		channel.effects.tonePortaActive = false;
+
 		if (note.effect != 0 || note.effectParameter != 0) {
-			channel.volumeDelta = 0; /* new effects cancel volumeDelta */
-			channel.periodDelta = 0; /* new effects cancel periodDelta */
-			channel.arpeggioActive = false;
+
+			channel.effects.arpeggioActive = false;
+
+			// New effects cancel these deltas
+			channel.volumeDelta = 0;
+			channel.periodDelta = 0;
+			
 			switch (note.effect) {
-				case 0x00: /* arpeggio: 0xy */
-					channel.arpeggioActive = true;
+
+				/* arpeggio: 0xy */
+				case 0x00: 
+					channel.effects.arpeggioActive = true;
 					channel.arpeggioNotes = [
 						channel.noteNumber,
 						channel.noteNumber + (note.effectParameter >> 4),
@@ -423,22 +439,30 @@ ModPlayer.prototype.loadRow = function(rowNumber) {
 					]
 					channel.arpeggioCounter = 0;
 					break;
-				case 0x01: /* pitch slide up - 1xx */
+
+				/* pitch slide up - 1xx */
+				case 0x01: 
 					channel.periodDelta = -note.effectParameter;
 					break;
-				case 0x02: /* pitch slide down - 2xx */
+
+				/* pitch slide down - 2xx */
+				case 0x02: 
 					channel.periodDelta = note.effectParameter;
 					break;
-				case 0x03: /* slide to note 3xy - */
-					channel.tonePortaActive = true;
+
+				/* slide to note 3xy - */
+				case 0x03: 
+					channel.effects.tonePortaActive = true;
 					channel.tonePortaTarget = (note.period != 0) ? note.period : channel.tonePortaTarget;
 					let dir = (channel.tonePortaTarget < prevNote.period) ? -1 : 1;
 					channel.tonePortaDelta = (note.effectParameter * dir);
 					channel.tonePortaVolStep = (note.effectParameter * dir);
 					channel.tonePortaDir = dir;
 					break;
-				case 0x05: /* portamento to note with volume slide 5xy */
-					channel.tonePortaActive = true;
+
+				/* portamento to note with volume slide 5xy */
+				case 0x05: 
+					channel.effects.tonePortaActive = true;
 					if (note.effectParameter & 0xf0) {
 						channel.volumeDelta = note.effectParameter >> 4;
 					} else {
@@ -446,10 +470,14 @@ ModPlayer.prototype.loadRow = function(rowNumber) {
 					}
 					channel.tonePortaDelta = channel.tonePortaVolStep;
 					break;
-				case 0x09: /* sample offset - 9xx */
+
+				/* sample offset - 9xx */
+				case 0x09: 
 					channel.samplePosition = 256 * note.effectParameter;
 					break;
-				case 0x0A: /* volume slide - Axy */
+
+				/* volume slide - Axy */
+				case 0x0A: 
 					if (note.effectParameter & 0xf0) {
 						/* volume increase by x */
 						channel.volumeDelta = note.effectParameter >> 4;
@@ -458,19 +486,25 @@ ModPlayer.prototype.loadRow = function(rowNumber) {
 						channel.volumeDelta = -note.effectParameter;
 					}
 					break;
-				case 0x0B: /* jump to order */
+
+				/* jump to order */
+				case 0x0B:
 					this.doBreak = true;
 					this.breakPos = note.effectParameter;
 					this.breakRow = 0;
 					break;
-				case 0x0C: /* volume */
+				
+				// 0x0C: Volume
+				case 0x0C:
 					if (note.effectParameter > 64) {
 						channel.volume = 64;
 					} else {
 						channel.volume = note.effectParameter;
 					}
 					break;
-				case 0x0D: /* pattern break; jump to next pattern at specified row */
+
+				// 0x0D: pattern break; jump to next pattern at specified row
+				case 0x0D: 
 					this.doBreak = true;
 					this.breakPos = this.currentPosition + 1;
 					//Row is written as DECIMAL so grab the high part as a single digit and do some math
@@ -478,7 +512,7 @@ ModPlayer.prototype.loadRow = function(rowNumber) {
 					break;
 					
 				case 0x0E:
-					// yes we're doing nested switch
+					// Yes we're doing nested switch. Effect "E" (extended) encompasses multiple effects.
 					switch (note.extEffect) {	
 						case 0x01: /* fine pitch slide up - E1x */
 							channel.finePeriodDelta = -note.extEffectParameter;
@@ -490,7 +524,8 @@ ModPlayer.prototype.loadRow = function(rowNumber) {
 							channel.finetune = note.extEffectParameter;
 							break;
 						case 0x09: /* retrigger sample - E9x */
-							channel.retrigger = note.extEffectParameter;
+							channel.effects.retriggerPoint = note.extEffectParameter;
+							channel.effects.retriggerActive = true;
 							break;
 						case 0x0A: /* fine volume slide up - EAx */
 							channel.fineVolumeDelta = note.extEffectParameter;
@@ -499,20 +534,23 @@ ModPlayer.prototype.loadRow = function(rowNumber) {
 							channel.fineVolumeDelta = -note.extEffectParameter;
 							break;
 						case 0x0C: /* note cut - ECx */
-							channel.cut = note.extEffectParameter;
+							channel.effects.cutPosition = note.extEffectParameter;
+							channel.effects.cutActive = true;
 							break;
 						case 0x0D: /* note delay - EDx */
-							channel.delay = note.extEffectParameter;
+							channel.effects.delayPosition = note.extEffectParameter;
+							channel.effects.delayActive = true;
 							break;
 						case 0x0E: /* pattern delay EEx */
 							this.delayRows = note.extEffectParameter;
 							break;
+						
+						// Effect E6x can either set loop start or loop end
 						case 0x06:
 							//set loop start with E60
-							if (note.extEffectParameter == 0) {
+							if (note.extEffectParameter === 0) {
 								this.exLoopStart = this.currentRow;
 							} else {
-
 								//set loop end with E6x
 								this.exLoopEnd = this.currentRow;
 
@@ -527,7 +565,8 @@ ModPlayer.prototype.loadRow = function(rowNumber) {
 					
 					break;
 					
-				case 0x0F: /* tempo change. <=32 sets ticks/row, greater sets beats/min instead */
+				/* tempo change. <=32 sets ticks/row, greater sets beats/min instead */
+				case 0x0F: 
 					let newSpeed = (note.effectParameter == 0) ? 1 : note.effectParameter; /* 0 is treated as 1 */
 					if (newSpeed <= 32) { 
 						this.framesPerRow = newSpeed;
@@ -538,10 +577,10 @@ ModPlayer.prototype.loadRow = function(rowNumber) {
 			}
 		}
 		
-		//for figuring out tone portamento effect
-		if (note.period != 0) { channel.prevNote = note; }
+		// for figuring out tone portamento effect
+		if (note.period != 0) channel.prevNote = note;
 		
-		if (channel.tonePortaActive == false) {
+		if (!channel.effects.tonePortaActive) {
 			channel.tonePortaDelta = 0;
 			channel.tonePortaTarget = 0;
 			channel.tonePortaVolStep = 0;

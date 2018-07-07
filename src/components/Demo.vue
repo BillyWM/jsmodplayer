@@ -23,11 +23,11 @@ export default {
     methods: {
         loadLocal: function(event) {
             player.loadLocalFile(event.target.files[0]);
-            player.playing = true;
+            player.play();
         },
         loadRemote: function(filename) {
             player.loadRemoteFile(filename);
-            player.playing = true;
+            player.play();
         }
     },
     data: function() {
