@@ -92,7 +92,7 @@ ModPlayer.prototype.loadLocalFile = function(file) {
 
     let reader = new FileReader();
     reader.onload = this._readerOnLoad.bind(this);
-	reader.readAsBinaryString(file);	
+	reader.readAsArrayBuffer(file);	
 }
 
 /**
