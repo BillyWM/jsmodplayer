@@ -2,7 +2,7 @@
     <div>
         <input type="file" accept=".mod" v-on:change="loadLocal">
         <ul>
-            <li v-for="mod in mods" :key="mod.name" v-on:click="loadRemote('static/mods/' + mod.filename)">
+            <li v-for="mod in mods" :key="mod.name" v-on:click="loadRemote(`static/mods/${mod.filename}`)">
                 {{ mod.name }} by {{ mod.author }}
             </li>
         </ul>
@@ -22,12 +22,12 @@ export default {
     name: "Demo",
     methods: {
         loadLocal: function(event) {
-            player.loadLocalFile(event.target.files[0]);
-            player.play();
+            player.loadLocalFile(event.target.files[0])
+                  .then(player.play.bind(this));
         },
         loadRemote: function(filename) {
-            player.loadRemoteFile(filename);
-            player.play();
+            player.loadRemoteFile(filename)
+                  .then(player.play.bind(this));
         }
     },
     data: function() {

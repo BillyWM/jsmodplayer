@@ -70,16 +70,18 @@ ModPlayer.prototype.reset = function() {
 ModPlayer.prototype.loadRemoteFile = function(path) {
     var request = new XMLHttpRequest();
     request.open('GET', path);
-    request.responseType = "arraybuffer";
-    request.onload = this._remoteOnLoad.bind(this, request);
-    request.send();
-}
+	request.responseType = "arraybuffer";
+	
+	// Wrap XHR onload callback with a Promise
+	let promise = new Promise((resolve, reject) => {
+		request.onload = () => {
+			this.loadMod(request.response);
+			resolve();
+		}
+	});
 
-/**
- * Callback when XHR has completed.
- */
-ModPlayer.prototype._remoteOnLoad = function(request, event) {
-	this.loadMod(request.response);
+	request.send();	
+	return promise;
 }
 
 /**
@@ -90,19 +92,18 @@ ModPlayer.prototype._remoteOnLoad = function(request, event) {
  */
 ModPlayer.prototype.loadLocalFile = function(file) {
 
-    let reader = new FileReader();
-    reader.onload = this._readerOnLoad.bind(this);
+	let reader = new FileReader();
+	
+	// Wrap FileReader onload callback with a Promise
+	let promise = new Promise((resolve, reject) => {
+		reader.onload = (event) => {
+			this.loadMod(event.target.result);
+			resolve();
+		}
+	});
+
 	reader.readAsArrayBuffer(file);	
-}
-
-/**
- * FileReader callback for loading a local file from harddrive
- * @param {*} event 
- */
-ModPlayer.prototype._readerOnLoad = function(event) {
-
-	let fileContents = event.target.result;
-	this.loadMod(fileContents);
+	return promise;
 }
 
 ModPlayer.prototype.loadMod = function(fileContents) {
@@ -696,6 +697,5 @@ ModPlayer.ModPeriodToNoteNumber = {};
 for (let i = 0; i < ModPlayer.ModPeriodTable[0].length; i++) {
 	ModPlayer.ModPeriodToNoteNumber[ModPlayer.ModPeriodTable[0][i]] = i;
 }
-
 
 export default ModPlayer;
