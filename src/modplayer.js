@@ -87,7 +87,6 @@ ModPlayer.prototype.loadRemoteFile = function(path) {
 /**
  * Load a .mod file from harddrive using HTML5 File API
  * 
- * TODO: Upgrade to return Promise to signal success
  * @param {*} file 
  */
 ModPlayer.prototype.loadLocalFile = function(file) {

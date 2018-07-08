@@ -67,7 +67,6 @@ ModFile.prototype.loadFromData = function(mod) {
 		}
 	}
 	
-	// TODO: identifier needs TextDecoder
 	let identifierView = new DataView(this.mod, 1080, 4);
 	let identifier = decoder.decode(identifierView);
 	
