@@ -1,12 +1,12 @@
 /* eslint-disable */
 
-// TODO: Separate effect flags from effect values (eg retrigger into retriggerActive and retriggerPoint)
-
-// loadLocalFile -> _readerOnLoad -> loadMod
-
 /*
 	Useful docs
 		Explains effect calculations: http://www.mediatel.lu/workshop/audio/fileformat/h_mod.html
+
+	Player lifecycle:
+
+		
 
 */
 
@@ -126,7 +126,6 @@ ModPlayer.prototype.initializeChannels = function() {
 
 	this.channels = [];
 
-	//TODO: Make a channel class
 	for (let chan = 0; chan < this.mod.channelCount; chan++) {
 		this.channels[chan] = {
 			playing: false,
