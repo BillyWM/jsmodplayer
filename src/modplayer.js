@@ -2,9 +2,21 @@
 
 /*
 	Useful docs
+
 		Explains effect calculations: http://www.mediatel.lu/workshop/audio/fileformat/h_mod.html
 
 	Player lifecycle:
+
+		After loading a .mod into memory, player loads the 0th position
+
+			loadPosition -> loadPattern -> loadRow
+
+		While playback is active, the audio context repeatedly requests samples (onaudioprocess).
+		The mod player executes "frames" on the current row until the allowed number of frames is exceeded.
+		The player then advances to the next row.
+		Where exactly the player advances to depends on the effects.
+
+			onaudioprocess -> getSamples -> doFrame (while frames remain) -> getNextRow -> loadPosition or loadRow
 
 
 
@@ -19,9 +31,15 @@ function ModPlayer() {
 
 	this.play = this.play.bind(this);
 
-	// Callbacks outside code can subscribe to (e.g. UI)
+	/*
+		Callbacks outside code can subscribe to (e.g. UI)
+
+		onmodloaded
+			When a .loadMod call has finished regardless of data source. UI can now look at e.g. pattern and sample data.
+	*/
 	this.onrowchanged = null;
 	this.onnewsamples = null;
+	this.onmodloaded = null;
 
 	this.setInitialState();
 	this.initializeAudio();
@@ -393,9 +411,11 @@ ModPlayer.prototype.loadRow = function(rowNumber) {
 
 		if (note.period !== 0 || note.sample !== 0) {
 
+			// that's 'sample' as in 'individual volume reading'
+			channel.ticksSinceStartOfSample = 0;
 			channel.playing = true;
 			channel.samplePosition = 0;
-			channel.ticksSinceStartOfSample = 0; /* that's 'sample' as in 'individual volume reading' */
+
 
 			if (note.sample !== 0) {
 				channel.sample = this.mod.samples[note.sample - 1];
@@ -571,8 +591,9 @@ ModPlayer.prototype.loadRow = function(rowNumber) {
 					break;
 					
 				/* tempo change. <=32 sets ticks/row, greater sets beats/min instead */
-				case 0x0F: 
-					let newSpeed = (note.effectParameter == 0) ? 1 : note.effectParameter; /* 0 is treated as 1 */
+				case 0x0F:
+					// 0 is treated as 1
+					let newSpeed = (note.effectParameter == 0) ? 1 : note.effectParameter; 
 					if (newSpeed <= 32) { 
 						this.framesPerRow = newSpeed;
 					} else {
@@ -594,18 +615,17 @@ ModPlayer.prototype.loadRow = function(rowNumber) {
 	
 }
 
-ModPlayer.prototype.loadPattern = function(patternNumber) {
-	let row = this.doBreak ? this.breakRow : 0;
-	this.currentPattern = this.mod.patterns[patternNumber];
-	this.loadRow(row);
-}
-
-// loadPosition -> loadPattern -> loadRow
 ModPlayer.prototype.loadPosition = function(positionNumber) {
 	//Handle invalid position numbers that may be passed by invalid loop points
 	positionNumber = (positionNumber > this.mod.positionCount - 1) ? 0 : positionNumber;	
 	this.currentPosition = positionNumber;
 	this.loadPattern(this.mod.positions[this.currentPosition]);
+}
+
+ModPlayer.prototype.loadPattern = function(patternNumber) {
+	let row = this.doBreak ? this.breakRow : 0;
+	this.currentPattern = this.mod.patterns[patternNumber];
+	this.loadRow(row);
 }
 
 ModPlayer.prototype.modPeriodToNoteNumber = function(period) {

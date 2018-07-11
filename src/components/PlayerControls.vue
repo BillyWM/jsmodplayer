@@ -10,6 +10,7 @@
 </template>
 
 <script>
+/*eslint-disable*/
 export default {
     name: "PlayerControls",
     props: {
