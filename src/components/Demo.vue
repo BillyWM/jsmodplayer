@@ -1,38 +1,45 @@
 <template>
     <div>
-        <input type="file" accept=".mod" v-on:change="loadLocal">
-        <ul>
-            <li v-for="mod in mods" :key="mod.name" v-on:click="loadRemote(`static/mods/${mod.filename}`)">
-                {{ mod.name }} by {{ mod.author }}
-            </li>
-        </ul>
+
+        <SongList :songs="songs" @loadRemote="loadRemote"></SongList>
+
+        <PlayerControls :player="player" @loadLocal="loadLocal"></PlayerControls>
+
+        <div class="credits">
+            <p>
+                Original JSModPlayer © 2010 by <a href="http://twitter.com/gasmanic">Matt Westcott</a>
+            </p>
+            <p>
+                This fork © 2011-2018 by <a href="http://billy.wenge-murphy.com/">William Wenge-Murphy</a>
+            </p>
+
+        </div>
     </div>
 </template>
 
 <script>
-
 /* eslint-disable */
-import ModPlayer from "@/ModPlayer.js";
-import ModFile from "@/ModFile.js";
-
-let player = new ModPlayer();
-
+import ModPlayerInterface from "@/ModPlayerInterface.js";
+import SongList from "./SongList.vue";
+import PlayerControls from "./PlayerControls.vue";
+let player = new ModPlayerInterface();
 
 export default {
     name: "Demo",
+    components: {
+        SongList,
+        PlayerControls
+    },
     methods: {
-        loadLocal: function(event) {
-            player.loadLocalFile(event.target.files[0])
-                  .then(player.play.bind(this));
-        },
-        loadRemote: function(filename) {
-            player.loadRemoteFile(filename)
-                  .then(player.play.bind(this));
-        }
+        loadLocal: player.loadLocal,
+        loadRemote: (filename) => player.loadRemote(`static/mods/${filename}`)
     },
     data: function() {
         return {
-            mods: [
+
+            // Exposes file-loading methods and player status like loading, playing, etc.
+            player: player,
+            songs: [
                 {
                     filename: "RandomVoice-Monday.mod",
                     name: "Monday",
@@ -70,6 +77,5 @@ export default {
 
 </script>
 
-<style scoped>
-
+<style lang="scss" scoped>
 </style>

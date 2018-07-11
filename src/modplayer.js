@@ -6,7 +6,7 @@
 
 	Player lifecycle:
 
-		
+
 
 */
 
@@ -16,6 +16,12 @@ function ModPlayer() {
 
 	this.mod = null;
 	this.rate = 44100;
+
+	this.play = this.play.bind(this);
+
+	// Callbacks outside code can subscribe to (e.g. UI)
+	this.onrowchanged = null;
+	this.onnewsamples = null;
 
 	this.setInitialState();
 	this.initializeAudio();
@@ -52,8 +58,8 @@ ModPlayer.prototype.onaudioprocess = function(event) {
 	output.right = event.outputBuffer.getChannelData(1);
 
 	for (let i=0; i < this.bufferSize; i++) {
-		output.left[i] = samples[0][i];
-		output.right[i] = samples[1][i];
+		output.left[i] = samples.left[i];
+		output.right[i] = samples.right[i];
 	}
 }
 
@@ -307,9 +313,12 @@ ModPlayer.prototype._clamp = function(value, min, max) {
 }
 
 ModPlayer.prototype.getSamples = function(sampleCount) {
+
 	let samplesLeft = [];
 	let samplesRight = [];
+	let samples = {left: samplesLeft, right: samplesRight, length: sampleCount};
 	let i = 0;
+
 	while (i < sampleCount) {
 		this.ticksSinceStartOfFrame += this.ticksPerOutputSample;
 		while (this.ticksSinceStartOfFrame >= this.ticksPerFrame) {
@@ -359,8 +368,11 @@ ModPlayer.prototype.getSamples = function(sampleCount) {
 		samplesRight[i] = this.rightOutputLevel / (128 * 128 * this.mod.channelCount);
 		i += 1;
 	}
+
+	// Trigger the onnewsamples callback if outside code is subscribed to it
+	if (this.onnewsamples && typeof this.onnewsamples === "function") this.onnewsamples(samples);
 	
-	return [samplesLeft, samplesRight];
+	return samples;
 }
 
 ModPlayer.prototype.loadRow = function(rowNumber) {
