@@ -29,6 +29,8 @@ function ModPlayer() {
 	this.mod = null;
 	this.rate = 44100;
 
+	this.analyzer = null;
+
 	this.play = this.play.bind(this);
 
 	/*
@@ -55,7 +57,11 @@ ModPlayer.prototype.initializeAudio = function() {
 	this.audioContext = new AudioContext();
 	processor = this.audioContext.createScriptProcessor(this.bufferSize, 0, 2);
 	processor.onaudioprocess = this.onaudioprocess.bind(this);
-    processor.connect(this.audioContext.destination);
+	processor.connect(this.audioContext.destination);
+	
+	this.analyzer = this.audioContext.createAnalyser();
+	this.analyzer.fftSize = 2048;
+	processor.connect(this.analyzer);
 
 }
 
