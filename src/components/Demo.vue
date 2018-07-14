@@ -1,19 +1,10 @@
 <template>
     <div>
-
         <SongList :songs="songs" @loadRemote="loadRemote"></SongList>
 
         <PlayerControls :player="player" @loadLocal="loadLocal"></PlayerControls>
 
-
-        <div class="visualizer">
-            <div class="bar" v-for="(bar, index) in player.visualizerBars" :key="index" :style="{height: bar + '%'}">
-            </div>
-
-            <svg class="oscilloscope">
-                <path v-bind:d="player.oscilloscopePath" stroke="white" stroke-width="1" fill="none" />
-            </svg>
-        </div>
+        <Visualizer :player="player"></Visualizer>
 
         <div class="credits">
             <p>
@@ -22,7 +13,6 @@
             <p>
                 This fork © 2011-2018 by <a href="http://billy.wenge-murphy.com/">William Wenge-Murphy</a>
             </p>
-
         </div>
     </div>
 </template>
@@ -32,6 +22,7 @@
 import ModPlayerInterface from "@/ModPlayerInterface.js";
 import SongList from "./SongList.vue";
 import PlayerControls from "./PlayerControls.vue";
+import Visualizer from "./Visualizer.vue";
 
 let player = new ModPlayerInterface();
 
@@ -39,7 +30,8 @@ export default {
     name: "Demo",
     components: {
         SongList,
-        PlayerControls
+        PlayerControls,
+        Visualizer
     },
     methods: {
         loadLocal: player.loadLocal,
@@ -89,31 +81,6 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-    .visualizer {
-        display: flex;
-        flex-direction: row;
-        align-items: flex-end;
-        position: relative;
-        width: 400px;
-        height: 100px;
-        border: 1px solid black;
-        background-color: black;
-    }
 
-    .visualizer .bar {
-        background-color: rgb(0, 120, 220);
-        width: 14px;
-        border: 1px solid black;
-        border-bottom: 0;
-        height: 100%;
-    }
-
-    .visualizer .oscilloscope {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-    }
 
 </style>
