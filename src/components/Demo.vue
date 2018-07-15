@@ -2,7 +2,7 @@
     <div>
         <SongList :songs="songs" @loadRemote="loadRemote"></SongList>
 
-        <PlayerControls :player="player" @loadLocal="loadLocal"></PlayerControls>
+        <PlayerControls :player="player" @loadLocal="loadLocal" @play="play" @stop="stop" @pause="pause"></PlayerControls>
 
         <Visualizer :player="player"></Visualizer>
 
@@ -35,6 +35,9 @@ export default {
     },
     methods: {
         loadLocal: player.loadLocal,
+        play: () => player.play(),
+        stop: () => player.stop(),
+        pause: () => player.pause(),
         loadRemote: (filename) => player.loadRemote(`static/mods/${filename}`)
     },
     data: function() {
@@ -42,7 +45,7 @@ export default {
 
             // Exposes file-loading methods and player status like loading, playing, etc.
             player: player,
-            
+
             songs: [
                 {
                     filename: "RandomVoice-Monday.mod",

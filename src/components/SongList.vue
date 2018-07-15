@@ -1,5 +1,5 @@
 <template>
-    <ul>
+    <ul class="song-list">
         <li v-for="song in songs"
             :key="song.name"
             @click="$emit('loadRemote', song.filename)">

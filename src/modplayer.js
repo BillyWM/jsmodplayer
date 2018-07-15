@@ -30,6 +30,9 @@ function ModPlayer() {
 	this.rate = 44100;
 
 	this.analyzer = null;
+	this.audioContext = null;
+	this.processorNode = null;
+	this.gainNode = null;
 
 	this.play = this.play.bind(this);
 
@@ -55,13 +58,18 @@ ModPlayer.prototype.initializeAudio = function() {
 	let processor;
 
 	this.audioContext = new AudioContext();
-	processor = this.audioContext.createScriptProcessor(this.bufferSize, 0, 2);
-	processor.onaudioprocess = this.onaudioprocess.bind(this);
-	processor.connect(this.audioContext.destination);
+	this.processorNode = this.audioContext.createScriptProcessor(this.bufferSize, 0, 2);
+	this.processorNode.onaudioprocess = this.onaudioprocess.bind(this);
+	// this.processorNode.connect(this.audioContext.destination);
+
+	this.gainNode = this.audioContext.createGain();
+	this.processorNode.connect(this.gainNode);
+
+	this.gainNode.connect(this.audioContext.destination);
 	
 	this.analyzer = this.audioContext.createAnalyser();
 	this.analyzer.fftSize = 2048;
-	processor.connect(this.analyzer);
+	this.processorNode.connect(this.analyzer);
 
 }
 
@@ -85,6 +93,10 @@ ModPlayer.prototype.onaudioprocess = function(event) {
 		output.left[i] = samples.left[i];
 		output.right[i] = samples.right[i];
 	}
+}
+
+ModPlayer.prototype.clearBuffer = function() {
+
 }
 
 ModPlayer.prototype.reset = function() {
@@ -140,16 +152,32 @@ ModPlayer.prototype.loadMod = function(fileContents) {
 	this.initializeChannels();
 	this.setBpm(125);
 	this.loadPosition(0);
-	this.playing = true;
 }
 
 
 ModPlayer.prototype.play = function() {
+
 	this.playing = true;
+
+	this.gainNode.gain.setValueAtTime(1, this.audioContext.currentTime);
 }
 
 ModPlayer.prototype.stop = function() {
 
+	this.playing = false;
+
+	this.gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+
+	this.initializeChannels();
+	this.setInitialState();
+	this.setBpm(125);
+	this.loadPosition(0);
+}
+
+ModPlayer.prototype.pause = function() {
+	this.playing = false;
+
+	this.gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
 }
 
 ModPlayer.prototype.initializeChannels = function() {

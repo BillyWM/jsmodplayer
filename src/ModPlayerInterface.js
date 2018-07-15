@@ -22,6 +22,8 @@ function ModPlayerInterface() {
     this.oscilloscopePath = null;
 
     this.frames = 0;
+
+    this._animationHandle = null;
 }
 
 ModPlayerInterface.prototype.subscribeCallbacks = function() {
@@ -32,6 +34,31 @@ ModPlayerInterface.prototype.subscribeCallbacks = function() {
 
 ModPlayerInterface.prototype.play = function() {
 
+    player.play();
+
+    this._animationalHandle = requestAnimationFrame(this.visualize);
+}
+
+ModPlayerInterface.prototype.resetVisualizer = function() {
+    let empty = new Array(1024).fill(0);
+    this.setVisualizerBars(empty);
+
+    this.oscilloscopePath = "";
+
+}
+
+ModPlayerInterface.prototype.stop = function() {
+
+    player.stop();
+
+    cancelAnimationFrame(this._animationalHandle);
+
+    this.resetVisualizer();
+}
+
+ModPlayerInterface.prototype.pause = function() {
+
+    player.pause();
 }
 
 ModPlayerInterface.prototype.setVisualizerBars = function(freqData) {
@@ -40,14 +67,13 @@ ModPlayerInterface.prototype.setVisualizerBars = function(freqData) {
     freqData = freqData.filter(x => skip++ % 16 == 0);
 
     this.visualizerBars = freqData;
-    // visualizerData.fps = Math.floor(1000/(timestamp - lastTimestamp));
 }
 
 ModPlayerInterface.prototype.setOscilloscopePath = function(timeData) {
 
     // if (this.frames % 3 == 0) return;
 
-    let path = "M 0 50 ";
+    let path = "M 0 50";
 
     let skip = 0;
     timeData = timeData.filter(x => skip++ % 8 == 0);
@@ -65,6 +91,8 @@ ModPlayerInterface.prototype.setOscilloscopePath = function(timeData) {
 ModPlayerInterface.prototype.visualize = function(timestamp) {
 
     this.frames++;
+
+    if (!this.playing) return;
 
     // Recursively call itself for next frame
     requestAnimationFrame(this.visualize);
@@ -85,9 +113,6 @@ ModPlayerInterface.prototype.onloaded = function() {
 
     this.loading = false;
 
-    player.play();
-
-    requestAnimationFrame(this.visualize);
 }
 
 ModPlayerInterface.prototype.loadLocal = function(event) {
