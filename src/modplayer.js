@@ -157,6 +157,11 @@ ModPlayer.prototype.loadMod = function(fileContents) {
 
 ModPlayer.prototype.play = function() {
 
+	if (!this.mod) {
+		console.warn("Can't play. No .mod file loaded");
+		return;
+	}
+
 	this.playing = true;
 
 	this.gainNode.gain.setValueAtTime(1, this.audioContext.currentTime);
