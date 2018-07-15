@@ -60,7 +60,6 @@ ModPlayer.prototype.initializeAudio = function() {
 	this.audioContext = new AudioContext();
 	this.processorNode = this.audioContext.createScriptProcessor(this.bufferSize, 0, 2);
 	this.processorNode.onaudioprocess = this.onaudioprocess.bind(this);
-	// this.processorNode.connect(this.audioContext.destination);
 
 	this.gainNode = this.audioContext.createGain();
 	this.processorNode.connect(this.gainNode);

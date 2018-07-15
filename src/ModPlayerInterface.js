@@ -15,6 +15,8 @@ function ModPlayerInterface() {
     // Subscribe-able callbacks
     this.onvisualizerframe = null;
 
+    this.sampleNames = [];
+
     this.vizTimeDomainData = new Uint8Array(player.analyzer.frequencyBinCount);
     this.vizFreqDomainData = new Uint8Array(player.analyzer.frequencyBinCount);
 
@@ -59,6 +61,15 @@ ModPlayerInterface.prototype.stop = function() {
 ModPlayerInterface.prototype.pause = function() {
 
     player.pause();
+}
+
+ModPlayerInterface.prototype.setSampleNames = function() {
+    
+    this.sampleNames = [];
+
+    for (let sample of player.mod.samples) {
+        this.sampleNames.push(sample.name);
+    }
 }
 
 ModPlayerInterface.prototype.setVisualizerBars = function(freqData) {
@@ -112,6 +123,8 @@ ModPlayerInterface.prototype.visualize = function(timestamp) {
 ModPlayerInterface.prototype.onloaded = function() {
 
     this.loading = false;
+
+    this.setSampleNames();
 
 }
 

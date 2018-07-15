@@ -15,16 +15,19 @@
             @pause="pause">
         </PlayerControls>
 
-        <div class="patterns"></div>
+        <PatternView
+            class="patterns">
+        </PatternView>
 
         <Visualizer
             class="visualizer"
             :player="player">
         </Visualizer>
 
-        <div class="samples">
-            Samples
-        </div>
+        <SampleList
+            class="samples"
+            :player="player">
+        </SampleList>
 
         <footer class="credits">
             <p>
@@ -43,6 +46,8 @@ import ModPlayerInterface from "@/ModPlayerInterface.js";
 import SongList from "./SongList.vue";
 import PlayerControls from "./PlayerControls.vue";
 import Visualizer from "./Visualizer.vue";
+import PatternView from "./PatternView.vue"
+import SampleList from "./SampleList.vue";
 
 let player = new ModPlayerInterface();
 
@@ -51,7 +56,9 @@ export default {
     components: {
         SongList,
         PlayerControls,
-        Visualizer
+        Visualizer,
+        PatternView,
+        SampleList
     },
     methods: {
         loadLocal: player.loadLocal,
@@ -115,8 +122,6 @@ export default {
             "songlist visualizer samples"
             "footer   footer     footer";
         justify-content: center;
-        // align-items: stretch;
-        // align-content: center;
         height: 80vh;
     }
 
@@ -126,7 +131,6 @@ export default {
 
     .patterns {
         grid-area: patterns;
-        background-color: black;
     }
 
     .controls {
