@@ -42,6 +42,7 @@ export default {
 
             // Exposes file-loading methods and player status like loading, playing, etc.
             player: player,
+            
             songs: [
                 {
                     filename: "RandomVoice-Monday.mod",
