@@ -43,15 +43,18 @@ ModFile.prototype.loadFromData = function(mod) {
 		let offset = 20 + (i * 30);
 
 		let sampleInfoView = new DataView(this.mod, offset, 30);
+		let sampleNameView = new DataView(this.mod, offset, 22);
 
-		//let sampleName = trimNulls(sampleInfo.substr(0, 22));
+		let sampleName = decoder.decode(sampleNameView);
+		sampleName = sampleName.replace(/\0+$/, "");
 
 		this.samples[i] = {
+			name: sampleName,
 			length: sampleInfoView.getUint16(22) * 2,
 			finetune: sampleInfoView.getUint8(24),
 			volume: sampleInfoView.getUint8(25),
 			repeatOffset: sampleInfoView.getUint16(26) * 2,
-			repeatLength: sampleInfoView.getUint16(28) * 2,
+			repeatLength: sampleInfoView.getUint16(28) * 2
 		}
 	}
 	
