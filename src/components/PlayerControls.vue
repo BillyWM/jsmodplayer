@@ -13,7 +13,12 @@
                 <icon name="pause"></icon>
             </button>
 
-            <input type="file" accept=".mod" v-on:change="$emit('loadLocal', $event)">
+            <label class="file-label">
+                <input type="file" accept=".mod" v-on:change="$emit('loadLocal', $event)">
+                <button class="file-button">
+                    <icon name="file-import"></icon>
+                </button>
+            </label>
 
             <div class="status">
                 <span v-if="player.playing">Playing</span>
@@ -28,6 +33,7 @@
 import "vue-awesome/icons/play";
 import "vue-awesome/icons/stop";
 import "vue-awesome/icons/pause";
+import "vue-awesome/icons/file-import";
 
 import Icon from "vue-awesome/components/Icon";
 
@@ -43,4 +49,16 @@ export default {
 </script>
 
 <style scoped lang="scss">
+    input[type="file"] {
+        display: none;
+    }
+
+    .file-button {
+        pointer-events: none;
+    }
+
+    button, .file-button {
+        border: none;
+        outline: none;
+    }
 </style>
