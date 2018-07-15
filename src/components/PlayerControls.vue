@@ -1,19 +1,19 @@
 <template>
-        <div class="controls">
+        <div>
 
-            <button v-on:click="$emit('play')">
+            <button v-on:click="$emit('play')" title="play">
                 <icon name="play"></icon>
             </button>
 
-            <button v-on:click="$emit('stop')">
+            <button v-on:click="$emit('stop')" title="stop">
                 <icon name="stop"></icon>
             </button>
 
-            <button v-on:click="$emit('pause')">
+            <button v-on:click="$emit('pause')" title="pause">
                 <icon name="pause"></icon>
             </button>
 
-            <label class="file-label">
+            <label class="file-label" title="load file">
                 <input type="file" accept=".mod" v-on:change="$emit('loadLocal', $event)">
                 <button class="file-button">
                     <icon name="file-import"></icon>
@@ -57,7 +57,7 @@ export default {
         pointer-events: none;
     }
 
-    button, .file-button {
+    button {
         border: none;
         outline: none;
     }

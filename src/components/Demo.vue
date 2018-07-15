@@ -1,19 +1,39 @@
 <template>
-    <div>
-        <SongList :songs="songs" @loadRemote="loadRemote"></SongList>
+    <div class="main">
+        <SongList
+            class="song-list"
+            :songs="songs"
+            @loadRemote="loadRemote">
+        </SongList>
 
-        <PlayerControls :player="player" @loadLocal="loadLocal" @play="play" @stop="stop" @pause="pause"></PlayerControls>
+        <PlayerControls
+            class="controls"
+            :player="player"
+            @loadLocal="loadLocal"
+            @play="play"
+            @stop="stop"
+            @pause="pause">
+        </PlayerControls>
 
-        <Visualizer :player="player"></Visualizer>
+        <div class="patterns"></div>
 
-        <div class="credits">
+        <Visualizer
+            class="visualizer"
+            :player="player">
+        </Visualizer>
+
+        <div class="samples">
+            Samples
+        </div>
+
+        <footer class="credits">
             <p>
                 Original JSModPlayer © 2010 by <a href="http://twitter.com/gasmanic">Matt Westcott</a>
             </p>
             <p>
                 This fork © 2011-2018 by <a href="http://billy.wenge-murphy.com/">William Wenge-Murphy</a>
             </p>
-        </div>
+        </footer>
     </div>
 </template>
 
@@ -85,6 +105,46 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+    .main {
+        display: grid;
+        grid-template-columns: 250px 500px 250px;
+        grid-template-rows: 100px 400px 200px 75px;
+        grid-template-areas:
+            "songlist controls   samples"
+            "songlist patterns   samples"
+            "songlist visualizer samples"
+            "footer   footer     footer";
+        justify-content: center;
+        // align-items: stretch;
+        // align-content: center;
+        height: 80vh;
+    }
 
+    .song-list {
+        grid-area: songlist;
+    }
 
+    .patterns {
+        grid-area: patterns;
+        background-color: black;
+    }
+
+    .controls {
+        grid-area: controls;
+    }
+
+    .visualizer {
+        grid-area: visualizer;
+        justify-self: center;
+        align-self: center;
+    }
+
+    .samples {
+        grid-area: samples;
+    }
+
+    footer {
+        grid-area: footer;
+        align-self: end;
+    }
 </style>

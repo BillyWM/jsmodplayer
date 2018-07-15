@@ -1,11 +1,13 @@
 <template>
-    <div class="visualizer">
-        <div class="bar" v-for="(bar, index) in player.visualizerBars" :key="index" :style="{height: bar + '%'}">
-        </div>
+    <div>
+        <div class="visualization">
+            <div class="bar" v-for="(bar, index) in player.visualizerBars" :key="index" :style="{height: bar + '%'}">
+            </div>
 
-        <svg class="oscilloscope">
-            <path v-bind:d="player.oscilloscopePath" stroke="white" stroke-width="1" fill="none" />
-        </svg>
+            <svg class="oscilloscope">
+                <path v-bind:d="player.oscilloscopePath" stroke="white" stroke-width="1" fill="none" />
+            </svg>
+        </div>
     </div>
 </template>
 
@@ -20,7 +22,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-    .visualizer {
+    .visualization {
         display: flex;
         flex-direction: row;
         align-items: flex-end;
@@ -31,7 +33,7 @@ export default {
         background-color: black;
     }
 
-    .visualizer .bar {
+    .visualization .bar {
         background-color: rgb(0, 120, 220);
         width: 14px;
         border: 1px solid black;
@@ -39,7 +41,7 @@ export default {
         height: 100%;
     }
 
-    .visualizer .oscilloscope {
+    .visualization .oscilloscope {
         position: absolute;
         left: 0;
         top: 0;
