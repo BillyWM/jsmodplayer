@@ -84,7 +84,7 @@ export default {
             display: block;
             height: 32px;
             flex-grow: 1;
-            background-color: lightgrey;
+            background-color: transparent;
         }
     }
 

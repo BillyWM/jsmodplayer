@@ -29,7 +29,7 @@ export default {
 
 <style lang="scss" scoped>
     .song-list-component {
-        background-color: lightgrey;
+        background-color: transparent;
     }
 
     .filter-box {

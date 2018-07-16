@@ -45,6 +45,8 @@ ModPlayerInterface.prototype.play = function() {
 
     player.play();
 
+    console.log(player);
+
     this._animationalHandle = requestAnimationFrame(this.visualize);
 }
 

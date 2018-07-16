@@ -55,7 +55,7 @@ function ModPlayer() {
 }
 
 /**
- * Create a connection to the Web Audio system
+ * Create a connection to the Web Audio system and set up nodes needed for visualization and volume control.
  */
 ModPlayer.prototype.initializeAudio = function() {
 	
@@ -77,7 +77,8 @@ ModPlayer.prototype.initializeAudio = function() {
 }
 
 /**
- * Callback triggered continously during playback
+ * Callback triggered continously during playback.
+ * Places samples into the output buffer.
  * 
  * @param {*} event 
  */
@@ -457,6 +458,9 @@ ModPlayer.prototype.getSamples = function(sampleCount) {
 	return samples;
 }
 
+/**
+ * Load a single row from the currently active pattern into memory for playback
+ */
 ModPlayer.prototype.loadRow = function(rowNumber) {
 
 	this.currentRow = rowNumber;
@@ -480,7 +484,6 @@ ModPlayer.prototype.loadRow = function(rowNumber) {
 			channel.playing = true;
 			channel.samplePosition = 0;
 
-
 			if (note.sample !== 0) {
 				channel.sample = this.mod.samples[note.sample - 1];
 				channel.sampleNum = note.sample - 1;
@@ -490,7 +493,8 @@ ModPlayer.prototype.loadRow = function(rowNumber) {
 
 			if (note.period !== 0) { // && note.effect != 0x03
 
-				//the note specified in a tone porta command is not actually played
+				// The note specified in a tone porta command (0x03) is not actually played.
+				// Play the specified note only if this isn't the current command. Otherwise continue playing the last note.
 				if (note.effect != 0x03) {
 					channel.noteNumber = this.modPeriodToNoteNumber(note.period);
 					channel.ticksPerSample = ModPlayer.ModPeriodTable[channel.finetune][channel.noteNumber] * 2;
@@ -542,7 +546,7 @@ ModPlayer.prototype.loadRow = function(rowNumber) {
 				/* slide to note 3xy - */
 				case 0x03: 
 					channel.effects.tonePortaActive = true;
-					channel.tonePortaTarget = (note.period != 0) ? note.period : channel.tonePortaTarget;
+					channel.tonePortaTarget = (note.period !== 0) ? note.period : channel.tonePortaTarget;
 					let dir = (channel.tonePortaTarget < prevNote.period) ? -1 : 1;
 					channel.tonePortaDelta = (note.effectParameter * dir);
 					channel.tonePortaVolStep = (note.effectParameter * dir);
@@ -583,13 +587,10 @@ ModPlayer.prototype.loadRow = function(rowNumber) {
 					this.breakRow = 0;
 					break;
 				
-				// 0x0C: Volume
+				// 0x0C: Volume.
+				// Valid values are 64 or less.
 				case 0x0C:
-					if (note.effectParameter > 64) {
-						channel.volume = 64;
-					} else {
-						channel.volume = note.effectParameter;
-					}
+					channel.volume = Math.min(note.effectParameter, 64);
 					break;
 
 				// 0x0D: pattern break; jump to next pattern at specified row
@@ -668,7 +669,7 @@ ModPlayer.prototype.loadRow = function(rowNumber) {
 		}
 		
 		// for figuring out tone portamento effect
-		if (note.period != 0) channel.prevNote = note;
+		if (note.period !== 0) channel.prevNote = note;
 		
 		if (!channel.effects.tonePortaActive) {
 			channel.tonePortaDelta = 0;
@@ -676,9 +677,15 @@ ModPlayer.prototype.loadRow = function(rowNumber) {
 			channel.tonePortaVolStep = 0;
 		}
 	}
-	
+
+	if (this.onrowchanged && typeof this.onrowchanged === "function") this.onrowchanged(this.mod);
 }
 
+/**
+ * Advance to a given position in the positions list.
+ * 
+ * A position is a reference to a pattern - a musical section that can be repeated many times.
+ */
 ModPlayer.prototype.loadPosition = function(positionNumber) {
 	//Handle invalid position numbers that may be passed by invalid loop points
 	positionNumber = (positionNumber > this.mod.positionCount - 1) ? 0 : positionNumber;	
@@ -686,6 +693,11 @@ ModPlayer.prototype.loadPosition = function(positionNumber) {
 	this.loadPattern(this.mod.positions[this.currentPosition]);
 }
 
+/**
+ * Load a pattern into memory as the active pattern to play.
+ * 
+ * A pattern is a musical section that can be referenced any number of times from the positions list.
+ */
 ModPlayer.prototype.loadPattern = function(patternNumber) {
 	let row = this.doBreak ? this.breakRow : 0;
 	this.currentPattern = this.mod.patterns[patternNumber];
