@@ -34,6 +34,10 @@ function ModPlayer() {
 	this.processorNode = null;
 	this.gainNode = null;
 
+	this.muted = false;
+
+	this.masterVolume = 1;
+
 	this.play = this.play.bind(this);
 
 	/*
@@ -153,6 +157,28 @@ ModPlayer.prototype.loadMod = function(fileContents) {
 	this.loadPosition(0);
 }
 
+ModPlayer.prototype.toggleMute = function() {
+	this.muted = !this.muted;
+
+	this._setGain();
+}
+
+/**
+ * Try to set gain to the provided value.
+ * 
+ * Keep it at 0 if player is muted.
+ * 
+ * If no value is provided, set gain to the master volume.
+ */
+ModPlayer.prototype._setGain = function(value = null) {
+	
+	let vol = (value === null) ? this.masterVolume : value;
+	
+	this.gainNode.gain.setValueAtTime(
+		this.muted ? 0 : vol,
+		this.audioContext.currentTime
+	);
+}
 
 ModPlayer.prototype.play = function() {
 
@@ -163,14 +189,14 @@ ModPlayer.prototype.play = function() {
 
 	this.playing = true;
 
-	this.gainNode.gain.setValueAtTime(1, this.audioContext.currentTime);
+	this._setGain(1);
 }
 
 ModPlayer.prototype.stop = function() {
 
 	this.playing = false;
 
-	this.gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+	this._setGain(0);
 
 	this.initializeChannels();
 	this.setInitialState();
@@ -181,7 +207,7 @@ ModPlayer.prototype.stop = function() {
 ModPlayer.prototype.pause = function() {
 	this.playing = false;
 
-	this.gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+	this._setGain(0);
 }
 
 ModPlayer.prototype.initializeChannels = function() {

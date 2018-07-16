@@ -1,19 +1,22 @@
 <template>
     <div class="main">
-        <SongList
-            class="song-list"
-            :songs="songs"
-            @loadRemote="loadRemote">
-        </SongList>
-
         <PlayerControls
             class="controls"
-            :player="player"
+            :status="status"
             @loadLocal="loadLocal"
             @play="play"
             @stop="stop"
-            @pause="pause">
+            @pause="pause"
+            @playRandom="playRandom"
+            @toggleMute="toggleMute">
         </PlayerControls>
+
+        <SongList
+            class="song-list"
+            :songs="songs"
+            :activeSong="activeSong"
+            @loadRemote="loadRemote">
+        </SongList>
 
         <PatternView
             class="patterns">
@@ -21,12 +24,12 @@
 
         <Visualizer
             class="visualizer"
-            :player="player">
+            :visualizerBars="visualizerBars" :oscilloscopePath="oscilloscopePath">
         </Visualizer>
 
         <SampleList
             class="samples"
-            :player="player">
+            :samples="samples">
         </SampleList>
 
         <footer class="credits">
@@ -60,19 +63,49 @@ export default {
         PatternView,
         SampleList
     },
+    computed: {
+        samples: () => player.sampleNames,
+        visualizerBars: () => player.visualizerBars,
+        oscilloscopePath: () => player.oscilloscopePath,
+        status: () => {
+            return {
+                playing: player.playing,
+                loading: player.loading,
+                stopped: !player.playing && !player.loading,
+                muted: player.muted
+            }
+        }
+    },
     methods: {
-        loadLocal: player.loadLocal,
+        loadLocal: function(...args) {
+            this.activeSong = null;
+            player.loadLocal(...args);
+        },
         play: () => player.play(),
         stop: () => player.stop(),
         pause: () => player.pause(),
-        loadRemote: (filename) => player.loadRemote(`static/mods/${filename}`)
+        toggleMute: () => {
+            player.toggleMute();
+        },
+        loadRemote: function(filename, index) {
+            player.loadRemote(`static/mods/${filename}`);
+            this.activeSong = index;
+        },
+        playRandom: function() {
+            let randomID = Math.floor(Math.random() * (this.songs.length));
+            this.loadRemote(this.songs[randomID].filename, randomID);
+            player.play();
+        },
+        playNext: function() {
+
+        }
     },
     data: function() {
         return {
 
             // Exposes file-loading methods and player status like loading, playing, etc.
             player: player,
-
+            activeSong: null,
             songs: [
                 {
                     filename: "RandomVoice-Monday.mod",
@@ -112,21 +145,25 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+
     .main {
         display: grid;
         grid-template-columns: 250px 500px 250px;
-        grid-template-rows: 100px 400px 200px 75px;
+        grid-template-rows: 40px 400px 200px 75px;
         grid-template-areas:
-            "songlist controls   samples"
+            "controls ........   samples"
             "songlist patterns   samples"
             "songlist visualizer samples"
             "footer   footer     footer";
         justify-content: center;
         height: 80vh;
+
+        background: none;
     }
 
     .song-list {
         grid-area: songlist;
+        padding-left: 5px;
     }
 
     .patterns {
@@ -135,6 +172,7 @@ export default {
 
     .controls {
         grid-area: controls;
+        align-self: end;
     }
 
     .visualizer {
@@ -150,5 +188,6 @@ export default {
     footer {
         grid-area: footer;
         align-self: end;
+        font-family: monospace;
     }
 </style>

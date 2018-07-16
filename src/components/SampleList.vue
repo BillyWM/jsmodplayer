@@ -2,7 +2,7 @@
     <div>
         <h3>Samples</h3>
         <ul>
-            <li v-for="(sample, index) in player.sampleNames" :key="index">
+            <li v-for="(sample, index) in samples" :key="index">
                 <span class="sample-number">{{ hex(index) }}</span>
                 <span class="sample-name">{{ sample }}</span>
             </li>
@@ -15,10 +15,13 @@
 export default {
     name: "SampleList",
     props: {
-        player: Object
+        samples: Array
     },
     methods: {
-        hex: (num) => (num).toString(16).toUpperCase().padStart(2, "0")
+        // Convert to n-digit hexadecimal
+        hex: (value, n=2) => {
+            return (value).toString(16).toUpperCase().padStart(n, "0");
+        }
     }
 }
 </script>

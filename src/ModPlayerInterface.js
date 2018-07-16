@@ -17,6 +17,8 @@ function ModPlayerInterface() {
 
     this.sampleNames = [];
 
+    this.muted = player.muted;
+
     this.vizTimeDomainData = new Uint8Array(player.analyzer.frequencyBinCount);
     this.vizFreqDomainData = new Uint8Array(player.analyzer.frequencyBinCount);
 
@@ -32,6 +34,11 @@ ModPlayerInterface.prototype.subscribeCallbacks = function() {
     // player.onnewsamples = (samples) => {
     //     console.log(`Got ${samples.length} samples`);
     // }
+}
+
+ModPlayerInterface.prototype.toggleMute = function() {
+    player.toggleMute();
+    this.muted = player.muted;
 }
 
 ModPlayerInterface.prototype.play = function() {

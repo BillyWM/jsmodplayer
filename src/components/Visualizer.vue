@@ -1,11 +1,11 @@
 <template>
     <div>
         <div class="visualization">
-            <div class="bar" v-for="(bar, index) in player.visualizerBars" :key="index" :style="{height: bar + '%'}">
+            <div class="bar" v-for="(bar, index) in visualizerBars" :key="index" :style="{height: bar + '%'}">
             </div>
 
             <svg class="oscilloscope">
-                <path v-bind:d="player.oscilloscopePath" stroke="white" stroke-width="1" fill="none" />
+                <path v-bind:d="oscilloscopePath" stroke="white" stroke-width="1" fill="none" />
             </svg>
         </div>
     </div>
@@ -16,7 +16,8 @@
 export default {
     name: "Visualizer",
     props: {
-        player: Object
+        visualizerBars: Uint8Array,
+        oscilloscopePath: String
     }
 }
 </script>
