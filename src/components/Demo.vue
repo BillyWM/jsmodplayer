@@ -8,6 +8,8 @@
             @stop="stop"
             @pause="pause"
             @playRandom="playRandom"
+            @playPrevious="playPrevious"
+            @playNext="playNext"
             @toggleMute="toggleMute">
         </PlayerControls>
 
@@ -96,8 +98,17 @@ export default {
             this.loadRemote(this.songs[randomID].filename, randomID);
             player.play();
         },
+        playPrevious: function() {
+            let choice = this.activeSong || 0;
+            choice = Math.max(0, choice - 1);
+            this.loadRemote(this.songs[choice].filename, choice);
+            player.play();
+        },
         playNext: function() {
-
+            let choice = this.activeSong || 0;
+            choice = Math.min(this.songs.length - 1, choice + 1);
+            this.loadRemote(this.songs[choice].filename, choice);
+            player.play();
         }
     },
     data: function() {

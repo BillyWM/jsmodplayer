@@ -1,7 +1,7 @@
 <template>
         <div class="player-controls">
 
-            <button class="control">
+            <button class="control" @click="$emit('playPrevious')">
                 <icon name="fast-backward"></icon>
             </button>
 
@@ -17,7 +17,7 @@
                 <icon name="pause"></icon>
             </button>
 
-            <button class="control">
+            <button class="control" @click="$emit('playNext')">
                 <icon name="fast-forward"></icon>
             </button>
 
