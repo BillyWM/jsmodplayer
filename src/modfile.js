@@ -2,6 +2,8 @@
 
 
 /**
+ * Represents an entire module.
+ * Loads all relevant data into memory, or can be be used to build a new module (TODO)
  * 
  * @param {ArrayBuffer} mod Data to populate this mod with. If not supplied, create an empty mod.
  */
@@ -124,6 +126,20 @@ ModFile.prototype.loadFromData = function(mod) {
 
 		sampleOffset += this.samples[s].length;
 	}
+}
+
+// Stubs for future "create mod" functionality
+
+/**
+ * Return a valid .mod file as an ArrayBuffer
+ */
+ModFile.prototype.createFile = function() {
+}
+
+/**
+ * TODO: Create separate ModSample class. Modify loading code to use it as well as addSample()
+ */
+ModFile.prototype.addSample = function() {
 }
 
 ModFile.channelCountByIdentifier = {
