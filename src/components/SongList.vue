@@ -6,7 +6,7 @@
             <li v-for="(song, index) in songs"
                 :class="{active: activeSong === index}"
                 :key="song.name"
-                @click="$emit('loadRemote', song.filename, index)">
+                @click="$emit('loadRemote', song.filename)">
 
                 <span class="song-name">{{ song.name }}</span>
                 <span class="by">by</span>

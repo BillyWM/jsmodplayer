@@ -35,6 +35,7 @@ function ModPlayer() {
 	this.gainNode = null;
 
 	this.muted = false;
+	this.playing = false;
 
 	this.masterVolume = 1;
 

@@ -5,15 +5,15 @@
                 <icon name="fast-backward"></icon>
             </button>
 
-            <button v-on:click="$emit('stop')" title="stop" class="control">
+            <button v-on:click="$emit('stop')" title="stop" :class="[{active: status.stopped}, 'control']">
                 <icon name="stop"></icon>
             </button>
 
-            <button v-on:click="$emit('play')" title="play" class="control">
+            <button v-on:click="$emit('play')" title="play" :class="[{active: status.playing}, 'control']">
                 <icon name="play"></icon>
             </button>
 
-            <button v-on:click="$emit('pause')" title="pause" class="control">
+            <button v-on:click="$emit('pause')" title="pause" :class="[{active: status.paused}, 'control']">
                 <icon name="pause"></icon>
             </button>
 
@@ -32,18 +32,13 @@
                 <icon name="dice"></icon>
             </button>
 
-            <button @click="$emit('toggleMute')" :class="[{muted: status.muted}, 'mute-button', 'control']">
+            <button @click="$emit('toggleMute')" :class="[{active: status.muted}, 'mute-button', 'control']">
                 <icon>
                     <icon name="volume-up" class="volume"></icon>
                     <icon name="ban" class="ban"></icon>
                 </icon>
             </button>
-
-            <!-- <div class="status">
-                <span v-if="player.playing">Playing</span>
-                <span v-else-if="player.loading">Loading...</span>
-                <span v-else-if="!player.loading && !player.playing">Stopped</span>
-            </div> -->
+            
         </div>
 </template>
 
@@ -73,6 +68,8 @@ export default {
 </script>
 
 <style scoped lang="scss">
+    $active-control-color: white;
+
     .player-controls {
 
         display: grid;
@@ -85,6 +82,10 @@ export default {
             height: 32px;
             flex-grow: 1;
             background-color: transparent;
+
+            &.active {
+                color: $active-control-color;
+            }
         }
     }
 

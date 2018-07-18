@@ -69,46 +69,56 @@ export default {
         samples: () => player.sampleNames,
         visualizerBars: () => player.visualizerBars,
         oscilloscopePath: () => player.oscilloscopePath,
-        status: () => {
+        stopped: () => !player.playing && !player.paused,
+        status: function() {
             return {
                 playing: player.playing,
                 loading: player.loading,
-                stopped: !player.playing && !player.loading,
-                muted: player.muted
+                muted: player.muted,
+                paused: player.paused,
+                stopped: this.stopped
             }
         }
     },
     methods: {
-        loadLocal: function(...args) {
-            this.activeSong = null;
-            player.loadLocal(...args);
-        },
         play: () => player.play(),
         stop: () => player.stop(),
         pause: () => player.pause(),
-        toggleMute: () => {
-            player.toggleMute();
-        },
-        loadRemote: function(filename, index) {
-            player.loadRemote(`static/mods/${filename}`);
-            this.activeSong = index;
-        },
+        toggleMute: () => player.toggleMute(),
         playRandom: function() {
             let randomID = Math.floor(Math.random() * (this.songs.length));
-            this.loadRemote(this.songs[randomID].filename, randomID);
-            player.play();
+
+            this.playByIndex(randomID);
         },
         playPrevious: function() {
             let choice = this.activeSong || 0;
             choice = Math.max(0, choice - 1);
-            this.loadRemote(this.songs[choice].filename, choice);
-            player.play();
+
+            this.playByIndex(choice);
         },
         playNext: function() {
             let choice = this.activeSong || 0;
             choice = Math.min(this.songs.length - 1, choice + 1);
-            this.loadRemote(this.songs[choice].filename, choice);
-            player.play();
+
+            this.playByIndex(choice);
+        },
+        playByIndex: function(index) {
+            this.activeSong = index;
+            this.loadRemote(this.songs[index].filename)
+                .then(this.play);
+        },
+        shuffle: function() {
+
+        },
+        loadLocal: function(event) {
+            this.activeSong = null;
+            return player.loadLocal(event.target.files[0]);
+        },
+        loadRemote: function(filename) {
+            let index = this.songs.findIndex(x => x.filename === filename);
+            if (index !== -1) this.activeSong = index;
+
+            return player.loadRemote(`static/mods/${filename}`);
         }
     },
     data: function() {
@@ -117,6 +127,8 @@ export default {
             // Exposes file-loading methods and player status like loading, playing, etc.
             player: player,
             activeSong: null,
+            paused: false,
+            shuffled: [],
             songs: [
                 {
                     filename: "RandomVoice-Monday.mod",

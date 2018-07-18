@@ -6,6 +6,8 @@ let player = new ModPlayer();
 
 function ModPlayerInterface() {
     this.loading = false;
+    this.paused = false;
+    this.playing = false;
 
     this.loadLocal = this.loadLocal.bind(this);
     this.loadRemote = this.loadRemote.bind(this);
@@ -45,6 +47,9 @@ ModPlayerInterface.prototype.play = function() {
 
     player.play();
 
+    this.paused = false;
+    this.playing = true;
+
     console.log(player);
 
     this._animationalHandle = requestAnimationFrame(this.visualize);
@@ -62,6 +67,9 @@ ModPlayerInterface.prototype.stop = function() {
 
     player.stop();
 
+    this.paused = false;
+    this.playing = false;
+
     cancelAnimationFrame(this._animationalHandle);
 
     this.resetVisualizer();
@@ -70,6 +78,9 @@ ModPlayerInterface.prototype.stop = function() {
 ModPlayerInterface.prototype.pause = function() {
 
     player.pause();
+
+    this.paused = true;
+    this.playing = false;
 }
 
 ModPlayerInterface.prototype.setSampleNames = function() {
@@ -90,8 +101,6 @@ ModPlayerInterface.prototype.setVisualizerBars = function(freqData) {
 }
 
 ModPlayerInterface.prototype.setOscilloscopePath = function(timeData) {
-
-    // if (this.frames % 3 == 0) return;
 
     let path = "M 0 50";
 
@@ -137,12 +146,12 @@ ModPlayerInterface.prototype.onloaded = function() {
 
 }
 
-ModPlayerInterface.prototype.loadLocal = function(event) {
+ModPlayerInterface.prototype.loadLocal = function(fileReference) {
 
     this.loading = true;
 
-    player.loadLocalFile(event.target.files[0])
-               .then(this.onloaded);
+    return player.loadLocalFile(fileReference)
+                 .then(this.onloaded);
 
 }
 
@@ -150,13 +159,9 @@ ModPlayerInterface.prototype.loadRemote = function(filePath) {
 
     this.loading = true;
 
-    player.loadRemoteFile(filePath)
-               .then(this.onloaded);
+    return player.loadRemoteFile(filePath)
+                 .then(this.onloaded);
 }
-
-Object.defineProperty(ModPlayerInterface.prototype, "playing", {
-    get: function() { return player.playing }
-})
 
 
 export default ModPlayerInterface;
