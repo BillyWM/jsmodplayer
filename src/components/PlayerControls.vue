@@ -38,23 +38,13 @@
                     <icon name="ban" class="ban"></icon>
                 </icon>
             </button>
-            
+
         </div>
 </template>
 
 <script>
 /*eslint-disable*/
-import "vue-awesome/icons/play";
-import "vue-awesome/icons/stop";
-import "vue-awesome/icons/pause";
-import "vue-awesome/icons/file-import";
-import "vue-awesome/icons/volume-up";
-import "vue-awesome/icons/ban";
-import "vue-awesome/icons/fast-forward";
-import "vue-awesome/icons/fast-backward";
-import "vue-awesome/icons/dice";
-
-import Icon from "vue-awesome/components/Icon";
+import Icon from "@/icons.js";
 
 export default {
     name: "PlayerControls",

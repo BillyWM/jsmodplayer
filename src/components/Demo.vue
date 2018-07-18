@@ -124,7 +124,9 @@ export default {
     data: function() {
         return {
 
-            // Exposes file-loading methods and player status like loading, playing, etc.
+            // Exposes file-loading methods and player status like loading, playing, etc,
+            //      but isolates the core player (ModPlayer.js) so that each and every property
+            //      doesn't become reactive.
             player: player,
             activeSong: null,
             paused: false,
