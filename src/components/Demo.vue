@@ -86,9 +86,19 @@ export default {
         pause: () => player.pause(),
         toggleMute: () => player.toggleMute(),
         playRandom: function() {
-            let randomID = Math.floor(Math.random() * (this.songs.length));
+            let randomID = this.lastSong;
+
+            // Choose a new random song, but avoid selecting the last song played or the current song playing
+            // Bail out if the playlist length <= 2 because it would be impossible to satisfy those constraints.
+            while (this.songs.length > 2 && (randomID === this.lastSong || randomID === this.activeSong)) {
+                randomID = Math.floor(Math.random() * (this.songs.length));
+            } 
 
             this.playByIndex(randomID);
+        },
+        playShuffle: function() {
+            this.shuffle();
+            this.playByIndex(this.shuffled[0]);
         },
         playPrevious: function() {
             let choice = this.activeSong || 0;
@@ -103,20 +113,41 @@ export default {
             this.playByIndex(choice);
         },
         playByIndex: function(index) {
+            this.lastSong = this.activeSong;
             this.activeSong = index;
             this.loadRemote(this.songs[index].filename)
                 .then(this.play);
         },
         shuffle: function() {
+            // Initialize if empty
+            if (!this.shuffled.length) {
+                this.songs.forEach((v, i) => this.shuffled.push(i));
 
+                // Now do the shuffle
+                let times = Math.floor(this.shuffled.length);
+                let choice;
+                for (let i = 0; i < times; i++) {
+                    choice = Math.floor(Math.random() * this.shuffled.length);
+                    let removed = this.shuffled.splice(choice, 1);
+                    this.shuffled.push(removed);
+                }
+
+            } else {
+
+                // Rotate the shuffle order
+                let removed = this.shuffled.shift();
+                this.shuffled.push(removed);
+            }
         },
         loadLocal: function(event) {
+            this.lastSong = this.activeSong;
             this.activeSong = null;
             return player.loadLocal(event.target.files[0]);
         },
         loadRemote: function(filename) {
             let index = this.songs.findIndex(x => x.filename === filename);
-            if (index !== -1) this.activeSong = index;
+            this.lastSong = this.activeSong;
+            this.activeSong = index;
 
             return player.loadRemote(`static/mods/${filename}`);
         }
@@ -129,6 +160,7 @@ export default {
             //      doesn't become reactive.
             player: player,
             activeSong: null,
+            lastSong: 0,
             paused: false,
             shuffled: [],
             songs: [
